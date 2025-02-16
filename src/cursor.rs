@@ -12,6 +12,7 @@ impl Plugin for CursorPlugin {
     }
 }
 
+//  this function does too much and is too confusing - should just update when needed
 fn cursor_update(
     camera_query: Single<(&Camera, &GlobalTransform)>,
     blocks: Query<&GlobalTransform, With<Block>>,
@@ -20,6 +21,10 @@ fn cursor_update(
     mut buttons: ResMut<ButtonInput<MouseButton>>,
     mut store_cursor: EventWriter<StoreCursor>
 ) {
+    if !buttons.clear_just_pressed(MouseButton::Left) && !buttons.clear_just_pressed(MouseButton::Right) {
+        return;
+    }
+
     let (camera, camera_transform) = *camera_query;
 
     let Some(cursor_position) = windows.cursor_position() else {
