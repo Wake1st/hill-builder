@@ -5,6 +5,9 @@ use crate::{block::BlockBundle, mesh::create_cube_mesh};
 const MAP_SIZE: i32 = 12;
 const GAP: f32 = 0.1;
 
+const ROW_AMPLITUDE: f32 = 2.2;
+const COL_AMPLITUDE: f32 = 1.4;
+
 const GROUND_COLOR: Color = Color::srgb(0.0, 0.9, 0.1);
 
 pub struct MapPlugin;
@@ -24,17 +27,20 @@ fn setup(
 
     for j in 0..MAP_SIZE {
         for i in 0..MAP_SIZE {
-            // Create and save a handle to the mesh.
+            // set a layer based on Fourier Transform
+            let layer: i32 = (ROW_AMPLITUDE * ops::sin(i as f32) + COL_AMPLITUDE * ops::cos(j as f32)) as i32;
+
+            // create and save a handle to the mesh.
             let cube_mesh_handle: Handle<Mesh> = meshes.add(create_cube_mesh());
         
-            // Render the mesh with the custom texture, and add the marker.
+            // render the mesh with the custom texture, and add the marker.
             commands.spawn(
                 BlockBundle::new(
                 cube_mesh_handle,
                 &mut materials,
                 GROUND_COLOR,
                 offset,
-                IVec3::new(i, j, 0)
+                IVec3::new(i, j, layer)
             ));
         }
     }

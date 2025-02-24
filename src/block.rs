@@ -28,7 +28,7 @@ impl GridBuilder for Block {
         Self {
             row: coordinates.x, 
             col: coordinates.y, 
-            layer: coordinates.z as f32
+            layer: coordinates.z as f32 * SHIFT_AMOUNT
         }
     }
 }
@@ -37,7 +37,7 @@ impl GridBuilder for Transform {
     fn from_grid_coordinates(coordinates: IVec3, offset: f32) -> Self {
         Transform::from_xyz(
             (coordinates.x as f32)*(1.0 + BLOCK_GAP) - offset, 
-            coordinates.z as f32,
+            coordinates.z as f32 * SHIFT_AMOUNT,
             (coordinates.y as f32)*(1.0 + BLOCK_GAP) - offset
         )
     }
