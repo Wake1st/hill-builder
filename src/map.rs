@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{block::BlockBundle, mesh::create_cube_mesh};
 
-const MAP_SIZE: i32 = 12;
+const MAP_SIZE: i32 = 22;
 const GAP: f32 = 0.1;
 
 const ROW_AMPLITUDE: f32 = 2.2;

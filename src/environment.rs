@@ -1,6 +1,6 @@
 use bevy::{prelude::*, render::camera::ScalingMode};
 
-const CAMERA_DISTANCE: f32 = 24.0;
+const CAMERA_DISTANCE: f32 = 28.0;
 const LIGHT_DISTANCE: f32 = 6.0;
 
 pub struct EnvironmentPlugin;
@@ -22,7 +22,7 @@ fn setup(mut commands: Commands) {
             },
             ..OrthographicProjection::default_3d()
         }),
-        Transform::from_xyz(CAMERA_DISTANCE, CAMERA_DISTANCE * 1.4, CAMERA_DISTANCE)
+        Transform::from_xyz(CAMERA_DISTANCE, CAMERA_DISTANCE * 0.8, CAMERA_DISTANCE)
         .looking_at(Vec3::ZERO, Vec3::Y)
     ));
 
