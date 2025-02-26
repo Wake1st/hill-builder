@@ -8,7 +8,8 @@ A simple game about building hills.
 - [x] issue with ray not selecting mouse over objects
 - [x] store row and col grid indicies
 - [x] every block clicked will affect it's neighbors, and so forth
-- [ ] camera controls - need to move around, rotate around, and zoom
+- [x] camera controls - need to move around, rotate around, and zoom
+- [ ] highlight hovered over mesh
 - [ ] shader code - with big maps, will need greater efficiency
 - [ ] different block types
   - [ ] water: flows downhill at some set rate
@@ -19,7 +20,7 @@ A simple game about building hills.
 - [ ] rainfall - maps should have rainfall
   - [ ] frequency: the percentage determining whether or not rain is falling
   - [ ] amount: the amount of rain falling when it does raining
-- [ ] ecosystems - will occur automatically given terrain conditions
+- [ ] ecosystems - will occur automatically given terrain and rainfall conditions
   - [ ] swamp: flatlands, 1 layer deep of water, rains often and a lot
   - [ ] forest: usually hilly geology, rains often, and a fair amount
   - [ ] grasslands: flat geology, rains more than plains

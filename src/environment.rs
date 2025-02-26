@@ -1,7 +1,7 @@
-use bevy::{prelude::*, render::camera::ScalingMode};
+use bevy::prelude::*;
 
-const CAMERA_DISTANCE: f32 = 24.0;
 const LIGHT_DISTANCE: f32 = 6.0;
+const LIGHT_RANGE: f32 = 100.;
 
 pub struct EnvironmentPlugin;
 
@@ -12,27 +12,12 @@ impl Plugin for EnvironmentPlugin {
 }
 
 fn setup(mut commands: Commands) {
-    // Camera in 3D space.
-    commands.spawn((
-        Camera3d::default(), 
-        Projection::from(OrthographicProjection {
-            // 6 world units per pixel of window height.
-            scaling_mode: ScalingMode::FixedVertical {
-                viewport_height: CAMERA_DISTANCE,
-            },
-            ..OrthographicProjection::default_3d()
-        }),
-        Transform::from_xyz(CAMERA_DISTANCE, CAMERA_DISTANCE * 1.4, CAMERA_DISTANCE)
-        .looking_at(Vec3::ZERO, Vec3::Y)
-    ));
-
     // Light up the scene.
     commands.spawn((
         PointLight {
-            range: 100.0, 
+            range: LIGHT_RANGE,
             ..default()
-        }, 
-        Transform::from_xyz(0.0, LIGHT_DISTANCE, 0.0)
+        },
+        Transform::from_xyz(0.0, LIGHT_DISTANCE, 0.0),
     ));
-
 }
