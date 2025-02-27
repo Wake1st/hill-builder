@@ -1,7 +1,8 @@
 use bevy::prelude::*;
 
-const LIGHT_DISTANCE: f32 = 6.0;
-const LIGHT_RANGE: f32 = 100.;
+const LIGHT_DISTANCE: f32 = 32.0;
+const LIGHT_RANGE: f32 = 1024.;
+const LIGHT_INTENSITY: f32 = 4_000_000.;
 
 pub struct EnvironmentPlugin;
 
@@ -16,6 +17,7 @@ fn setup(mut commands: Commands) {
     commands.spawn((
         PointLight {
             range: LIGHT_RANGE,
+            intensity: LIGHT_INTENSITY,
             ..default()
         },
         Transform::from_xyz(0.0, LIGHT_DISTANCE, 0.0),

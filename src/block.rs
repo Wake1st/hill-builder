@@ -1,19 +1,13 @@
 use bevy::prelude::*;
 
-use crate::{cursor::StoreCursor, mesh::create_cube_mesh, shifting::{Shifting, SHIFT_AMOUNT}};
+use crate::shifting::SHIFT_AMOUNT;
 
-const GROUND_COLOR: Color = Color::srgb(0.0, 0.9, 0.1);
-const MAP_SIZE: i32 = 12;
-const GAP: f32 = 0.1;
+const BLOCK_GAP: f32 = 0.1;
 
 pub struct BlockPlugin;
 
 impl Plugin for BlockPlugin {
-    fn build(&self, app: &mut App) {
-        app
-        .add_systems(Startup, setup)
-        .add_systems(Update, read_position);
-}
+    fn build(&self, _app: &mut App) {}
 }
 
 #[derive(Component)]
@@ -23,60 +17,76 @@ pub struct Block {
     pub layer: f32,
 }
 
-fn setup(
-    mut commands: Commands,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut meshes: ResMut<Assets<Mesh>>,
-) {
-    let offset: f32 = (MAP_SIZE as f32) * GAP / 2.0;
-
-    for j in 0..MAP_SIZE {
-        for i in 0..MAP_SIZE {
-            // Create and save a handle to the mesh.
-            let cube_mesh_handle: Handle<Mesh> = meshes.add(create_cube_mesh());
-        
-            // Render the mesh with the custom texture, and add the marker.
-            commands.spawn((
-                Mesh3d(cube_mesh_handle),
-                MeshMaterial3d(materials.add(StandardMaterial {
-                    base_color: GROUND_COLOR,
-                    ..default()
-                })),
-                Transform::from_xyz((i as f32)*(1.0 + GAP) - offset, 0.0, (j as f32)*(1.0 + GAP) - offset),
-                Block { row: i, col: j, layer: 0.0, }
-            ));
-        }
-    }
-
-    // Text to describe the controls.
-    commands.spawn((
-        Text::new("Left click a block to pull it up; right click a block to push it down."),
-        Node {
-            position_type: PositionType::Absolute,
-            top: Val::Px(12.0),
-            left: Val::Px(12.0),
-            ..default()
-        },
-    ));
+#[derive(Component)]
+pub struct Neighborhood {
+    pub left_neighbor: Entity,
+    pub right_neighbor: Entity,
+    pub front_neighbor: Entity,
+    pub back_neighbor: Entity,
 }
 
+impl Neighborhood {
+    pub fn get_neighbors(&self) -> Vec<Entity> {
+        vec![
+            self.left_neighbor,
+            self.right_neighbor,
+            self.front_neighbor,
+            self.back_neighbor,
+        ]
+    }
+}
 
-fn read_position(
-    mut cursor_position: EventReader<StoreCursor>,
-    mut blocks: Query<(Entity, &GlobalTransform, &mut Block)>,
-    mut commands: Commands,
-) {
-    for cursor in cursor_position.read() {
-        for (entity, transform, mut block) in blocks.iter_mut() {
-            let rect = Rect::from_center_half_size(
-                transform.translation().xz(), 
-                Vec2::new(0.5, 0.5)
-            );
-            if rect.contains(cursor.position) {
-                block.layer += if cursor.pull { SHIFT_AMOUNT } else { -SHIFT_AMOUNT };
-                commands.entity(entity).insert(Shifting { up: cursor.pull });
-                break;
-            }
+trait GridBuilder {
+    fn from_grid_coordinates(coordinations: IVec3, offset: f32) -> Self;
+}
+
+impl GridBuilder for Block {
+    fn from_grid_coordinates(coordinates: IVec3, _offset: f32) -> Self {
+        Self {
+            row: coordinates.x,
+            col: coordinates.y,
+            layer: coordinates.z as f32 * SHIFT_AMOUNT,
+        }
+    }
+}
+
+impl GridBuilder for Transform {
+    fn from_grid_coordinates(coordinates: IVec3, offset: f32) -> Self {
+        Transform::from_xyz(
+            (coordinates.x as f32) * (1.0 + BLOCK_GAP) - offset,
+            coordinates.z as f32 * SHIFT_AMOUNT,
+            (coordinates.y as f32) * (1.0 + BLOCK_GAP) - offset,
+        )
+    }
+}
+
+#[derive(Bundle)]
+pub struct BlockBundle {
+    mesh: Mesh3d,
+    material: MeshMaterial3d<StandardMaterial>,
+    transform: Transform,
+    block: Block,
+    neighborhood: Neighborhood,
+}
+
+impl BlockBundle {
+    pub fn new(
+        block_mesh_handle: Handle<Mesh>,
+        mesh_matl: Handle<StandardMaterial>,
+        block_offset: f32,
+        grid_coordinates: IVec3,
+    ) -> Self {
+        Self {
+            mesh: Mesh3d(block_mesh_handle),
+            material: MeshMaterial3d(mesh_matl),
+            transform: Transform::from_grid_coordinates(grid_coordinates, block_offset),
+            block: Block::from_grid_coordinates(grid_coordinates, block_offset),
+            neighborhood: Neighborhood {
+                left_neighbor: Entity::PLACEHOLDER,
+                right_neighbor: Entity::PLACEHOLDER,
+                front_neighbor: Entity::PLACEHOLDER,
+                back_neighbor: Entity::PLACEHOLDER,
+            },
         }
     }
 }

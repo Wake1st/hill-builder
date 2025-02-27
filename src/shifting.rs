@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::block::Block;
+use crate::block::{Block, Neighborhood};
 
 const SHIFT_RATE: f32 = 8.4;
 pub const SHIFT_AMOUNT: f32 = 0.5;
@@ -9,8 +9,7 @@ pub struct ShiftPlugin;
 
 impl Plugin for ShiftPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_event::<ShiftFinished>()
+        app.add_event::<ShiftFinished>()
             .add_systems(Update, (shift_blocks, shift_neighbors));
     }
 }
@@ -22,10 +21,9 @@ pub struct Shifting {
 
 #[derive(Event)]
 pub struct ShiftFinished {
+    pub entity: Entity,
     pub up: bool,
-    pub row: i32,
-    pub col: i32,
-    pub layer: f32
+    pub layer: f32,
 }
 
 fn shift_blocks(
@@ -49,17 +47,16 @@ fn shift_blocks(
 
                 if transform.translation.y < block.layer {
                     transform.translation.y = block.layer;
-                }     
+                }
             }
         }
-        
+
         if transform.translation.y == block.layer {
             //  send event to check neighbors
-            shift_finished.send(ShiftFinished { 
+            shift_finished.send(ShiftFinished {
+                entity,
                 up: shifting.up,
-                row: block.row,
-                col: block.col,
-                layer: block.layer
+                layer: block.layer,
             });
 
             //  remove the shifting component
@@ -70,32 +67,38 @@ fn shift_blocks(
 
 fn shift_neighbors(
     mut shift_finished: EventReader<ShiftFinished>,
-    mut blocks: Query<(Entity, &mut Block)>,
-    mut commands: Commands
+    blocks: Query<&Neighborhood>,
+    mut neighbors: Query<&mut Block>,
+    mut commands: Commands,
 ) {
     for shift in shift_finished.read() {
-        for (neighbor_entity, mut neighbor_block) in blocks.iter_mut() {
-            let left_neighbor = shift.row - 1 == neighbor_block.row && shift.col == neighbor_block.col;
-            let right_neighbor = shift.row + 1 == neighbor_block.row && shift.col == neighbor_block.col;
-            let front_neighbor = shift.col - 1 == neighbor_block.col && shift.row == neighbor_block.row;
-            let back_neighbor = shift.col + 1 == neighbor_block.col && shift.row == neighbor_block.row;
+        let Ok(neighborhood) = blocks.get(shift.entity) else {
+            continue;
+        };
 
-            if left_neighbor || right_neighbor || front_neighbor || back_neighbor {    
-                let separation = shift.layer - neighbor_block.layer;
+        //  shift the 4 neighbors, if necessary
+        for neighbor_entity in neighborhood.get_neighbors().iter() {
+            let Ok(mut neighbor_block) = neighbors.get_mut(*neighbor_entity) else {
+                continue;
+            };
 
-                let layer_change= if shift.up && separation > SHIFT_AMOUNT {
-                    SHIFT_AMOUNT
-                } else if !shift.up && separation < -SHIFT_AMOUNT {
-                    -SHIFT_AMOUNT
-                } else {
-                    0.0
-                };
-                
-                if layer_change != 0.0 {
-                    neighbor_block.layer += layer_change;
-                    commands.entity(neighbor_entity).insert(Shifting { up: shift.up });
-                }
-            } 
+            //  calculate if there is a layer change
+            let separation = shift.layer - neighbor_block.layer;
+            let layer_change = if shift.up && separation > SHIFT_AMOUNT {
+                SHIFT_AMOUNT
+            } else if !shift.up && separation < -SHIFT_AMOUNT {
+                -SHIFT_AMOUNT
+            } else {
+                0.0
+            };
+
+            //  ensure the block only shifts when required
+            if layer_change != 0.0 {
+                neighbor_block.layer += layer_change;
+                commands
+                    .entity(*neighbor_entity)
+                    .insert(Shifting { up: shift.up });
+            }
         }
     }
 }
