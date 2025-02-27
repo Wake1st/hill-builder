@@ -17,6 +17,25 @@ pub struct Block {
     pub layer: f32,
 }
 
+#[derive(Component)]
+pub struct Neighborhood {
+    pub left_neighbor: Entity,
+    pub right_neighbor: Entity,
+    pub front_neighbor: Entity,
+    pub back_neighbor: Entity,
+}
+
+impl Neighborhood {
+    pub fn get_neighbors(&self) -> Vec<Entity> {
+        vec![
+            self.left_neighbor,
+            self.right_neighbor,
+            self.front_neighbor,
+            self.back_neighbor,
+        ]
+    }
+}
+
 trait GridBuilder {
     fn from_grid_coordinates(coordinations: IVec3, offset: f32) -> Self;
 }
@@ -47,6 +66,7 @@ pub struct BlockBundle {
     material: MeshMaterial3d<StandardMaterial>,
     transform: Transform,
     block: Block,
+    neighborhood: Neighborhood,
 }
 
 impl BlockBundle {
@@ -61,6 +81,12 @@ impl BlockBundle {
             material: MeshMaterial3d(mesh_matl),
             transform: Transform::from_grid_coordinates(grid_coordinates, block_offset),
             block: Block::from_grid_coordinates(grid_coordinates, block_offset),
+            neighborhood: Neighborhood {
+                left_neighbor: Entity::PLACEHOLDER,
+                right_neighbor: Entity::PLACEHOLDER,
+                front_neighbor: Entity::PLACEHOLDER,
+                back_neighbor: Entity::PLACEHOLDER,
+            },
         }
     }
 }

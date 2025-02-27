@@ -3,12 +3,12 @@ use std::f32::consts::PI;
 use bevy::prelude::*;
 
 use crate::{
-    block::BlockBundle,
+    block::{Block, BlockBundle, Neighborhood},
     mesh::create_cube_mesh,
     selection::{update_block_selection, update_material_on},
 };
 
-const MAP_SIZE: i32 = 34;
+const MAP_SIZE: i32 = 64;
 const GAP: f32 = 0.1;
 
 const ROW_AMPLITUDE: f32 = 2.8;
@@ -23,7 +23,7 @@ pub struct MapPlugin;
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(MapGenSettings::default());
-        app.add_systems(Startup, (pre_setup, setup).chain());
+        app.add_systems(Startup, (pre_setup, setup, allocate_neighbors).chain());
     }
 }
 
@@ -83,4 +83,26 @@ fn generate_layer(x: i32, y: i32, map_gen_settings: &MapGenSettings) -> i32 {
         + map_gen_settings.amplitude.y
             * ops::cos(y as f32 * map_gen_settings.wavelength.y + map_gen_settings.phase_shift.y)
         + map_gen_settings.vertical_shift.y) as i32
+}
+
+fn allocate_neighbors(
+    mut blocks: Query<(Entity, &Block, &mut Neighborhood)>,
+    neighbors: Query<(Entity, &Block)>,
+) {
+    for (_, block, mut neighborhood) in blocks.iter_mut() {
+        for (neighbor_entity, neighbor) in neighbors.iter() {
+            if block.row - 1 == neighbor.row && block.col == neighbor.col {
+                neighborhood.left_neighbor = neighbor_entity;
+            }
+            if block.row + 1 == neighbor.row && block.col == neighbor.col {
+                neighborhood.right_neighbor = neighbor_entity;
+            }
+            if block.col - 1 == neighbor.col && block.row == neighbor.row {
+                neighborhood.front_neighbor = neighbor_entity;
+            }
+            if block.col + 1 == neighbor.col && block.row == neighbor.row {
+                neighborhood.back_neighbor = neighbor_entity;
+            }
+        }
+    }
 }
