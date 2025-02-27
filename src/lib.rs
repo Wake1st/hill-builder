@@ -1,5 +1,6 @@
 mod block;
 mod environment;
+mod flying_camera;
 mod instructions;
 mod map;
 mod mesh;
@@ -9,6 +10,7 @@ mod shifting;
 use bevy::prelude::*;
 use block::BlockPlugin;
 use environment::EnvironmentPlugin;
+use flying_camera::FlyingCameraPlugin;
 use instructions::InstructionsPlugin;
 use map::MapPlugin;
 use selection::SelectionPlugin;
@@ -22,6 +24,7 @@ impl Plugin for AppPlugin {
             EnvironmentPlugin,
             SelectionPlugin,
             MapPlugin,
+            FlyingCameraPlugin,
             BlockPlugin,
             ShiftPlugin,
             InstructionsPlugin,
