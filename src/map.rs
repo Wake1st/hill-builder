@@ -8,7 +8,7 @@ use crate::{
     selection::{update_block_selection, update_material_on},
 };
 
-const MAP_SIZE: i32 = 64;
+const MAP_SIZE: i32 = 44;
 const GAP: f32 = 0.1;
 
 const ROW_AMPLITUDE: f32 = 2.8;
