@@ -14,11 +14,15 @@ A simple game about building hills.
   - [x] store neighbors after map generate
   - [x] impl a `fn allocate_neighbors()` for `Block`
   - [x] only check neighbors for each shift finished
+- [x] CLI - in game console dev tool
+  - [x] map gen
+  - [x] file storage
+  - [ ] testing
+- [x] map generator should have custom and proc-gen
+  - [x] build map and save with CLI
+  - [x] proc-gen should allow raw input
+  - [ ] proc-gen should have types per desired results
 - [ ] shader code - with big maps, will need greater efficiency
-- [ ] CLI - for in game debugging and testing
-- [ ] map generator should have custom and proc-gen
-  - [ ] build map and save with CLI
-  - [ ] proc-gen should have ranges per desired results
 - [ ] different block types
   - [ ] water: flows downhill at some set rate
   - [ ] sand: 1 layer separation amount

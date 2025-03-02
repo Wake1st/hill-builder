@@ -1,0 +1,23 @@
+{
+  "size": 18,
+  "terrain": {
+    "CURVED": {
+      "amplitude": [
+        3.0,
+        4.0
+      ],
+      "wavelength": [
+        0.2,
+        0.1
+      ],
+      "vertical_shift": [
+        0.0,
+        0.0
+      ],
+      "phase_shift": [
+        4.0,
+        2.3
+      ]
+    }
+  }
+}
