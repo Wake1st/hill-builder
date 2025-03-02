@@ -5,3 +5,5 @@ edition = "2021"
 
 [dependencies]
 bevy = "0.15.2"
+bevy_console = "0.13.1"
+clap = "4.5.31"

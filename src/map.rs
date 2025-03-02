@@ -44,6 +44,29 @@ fn pre_setup(mut map_gen_settings: ResMut<MapGenSettings>) {
     };
 }
 
+#[derive(Resource, Default, Debug)]
+pub struct MapGenSettings {
+    pub amplitude: Vec2,
+    pub wavelength: Vec2,
+    pub vertical_shift: Vec2,
+    pub phase_shift: Vec2,
+}
+
+fn pre_setup(mut map_gen_settings: ResMut<MapGenSettings>) {
+    *map_gen_settings = MapGenSettings {
+        amplitude: Vec2::new(ROW_AMPLITUDE, COL_AMPLITUDE),
+        wavelength: Vec2::new(ROW_WAVELENGTH, COL_WAVELENGTH),
+        vertical_shift: Vec2::ZERO,
+        phase_shift: Vec2::new(-PI, PI / 2.),
+    };
+}
+
+pub enum TerrainType {
+    FLAT,
+    CURVED()
+}
+
+
 fn setup(
     mut commands: Commands,
     mut materials: ResMut<Assets<StandardMaterial>>,
