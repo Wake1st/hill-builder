@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{block::{Block, Neighborhood}, selection::BlockSelected};
+use crate::{block::Block, neighborhood::Neighborhood, selection::BlockSelected};
 
 const SHIFT_RATE: f32 = 8.4;
 pub const SHIFT_AMOUNT: f32 = 0.5;

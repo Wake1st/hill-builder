@@ -9,6 +9,7 @@ mod shifting;
 mod console_commands;
 mod water;
 mod draining;
+mod neighborhood;
 
 use bevy::prelude::*;
 use block::BlockPlugin;

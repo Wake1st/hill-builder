@@ -2,9 +2,7 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    block::{Block, BlockBundle, Neighborhood},
-    mesh::create_cube_mesh,
-    selection::{update_block_selection, update_material_on},
+    block::{Block, BlockBundle}, mesh::create_cube_mesh, neighborhood::Neighborhood, selection::{update_block_selection, update_material_on}, shifting::SHIFT_AMOUNT, water::{Water, WATER_COLOR, WATER_MESH_SCALE}
 };
 
 const MAP_SIZE_DEFAULT: i32 = 8;
@@ -96,11 +94,13 @@ fn generate_map(
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
     for generation in event.read() {
-
         let hover_matl = materials.add(Color::WHITE);
         let ground_matl = materials.add(GROUND_COLOR);
-        let cube_mesh_handle: Handle<Mesh> = meshes.add(create_cube_mesh(None));
-        
+        let water_matl = materials.add(WATER_COLOR);
+
+        let ground_mesh_handle: Handle<Mesh> = meshes.add(create_cube_mesh(None));
+        let water_mesh_handle = meshes.add(create_cube_mesh(Some(WATER_MESH_SCALE)));
+    
         let map_size = generation.settings.size;
         let map_offset: f32 = (map_size as f32) * (1. + GAP) / 2.0;
 
@@ -111,19 +111,23 @@ fn generate_map(
                     TerrainSettings::CURVED(settings) => generate_layer(i, j, &settings),
                 };
 
-                // create and save a handle to the mesh.
-
                 // render the mesh with the custom texture, and add the marker.
                 commands
                     .spawn(BlockBundle::new(
-                        cube_mesh_handle.clone(),
+                        ground_mesh_handle.clone(),
                         ground_matl.clone(),
                         map_offset,
                         IVec3::new(i, j, layer),
                     ))
                     .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
                     .observe(update_material_on::<Pointer<Out>>(ground_matl.clone()))
-                    .observe(update_block_selection::<Pointer<Down>>());
+                    .observe(update_block_selection::<Pointer<Down>>())
+                    .with_child((
+                        Water { amount: 0.0 },
+                        Mesh3d(water_mesh_handle.clone()),
+                        MeshMaterial3d(water_matl.clone()),
+                        Transform::from_xyz(0.0, SHIFT_AMOUNT, 0.0),
+                    ));
             }
         }
     }
