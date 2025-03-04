@@ -99,7 +99,7 @@ fn generate_map(
 
         let hover_matl = materials.add(Color::WHITE);
         let ground_matl = materials.add(GROUND_COLOR);
-        let cube_mesh_handle: Handle<Mesh> = meshes.add(create_cube_mesh());
+        let cube_mesh_handle: Handle<Mesh> = meshes.add(create_cube_mesh(None));
         
         let map_size = generation.settings.size;
         let map_offset: f32 = (map_size as f32) * (1. + GAP) / 2.0;

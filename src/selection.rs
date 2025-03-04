@@ -1,17 +1,13 @@
 use bevy::prelude::*;
 
-use crate::{
-    block::Block,
-    shifting::{Shifting, SHIFT_AMOUNT},
-};
+use crate::water::{FillWater, ToggleWater};
 
 pub struct SelectionPlugin;
 
 impl Plugin for SelectionPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(MeshPickingPlugin)
-            .add_event::<BlockSelected>()
-            .add_systems(Update, try_shift_selected_block);
+            .add_event::<BlockSelected>();
     }
 }
 
@@ -33,37 +29,17 @@ pub fn update_material_on<E>(
 }
 
 /// An observer that runs the selection event
-pub fn update_block_selection<E>() -> impl Fn(Trigger<E>, EventWriter<BlockSelected>) {
-    move |trigger, mut selection| {
-        selection.send(BlockSelected {
-            entity: trigger.entity(),
-        });
-    }
-}
-
-/// A function that shifts a selected block
-fn try_shift_selected_block(
-    mut selection: EventReader<BlockSelected>,
-    buttons: Res<ButtonInput<MouseButton>>,
-    mut blocks: Query<&mut Block>,
-    mut commands: Commands,
+pub fn update_block_selection<E>() -> impl Fn(
+    Trigger<E>, 
+    Res<ToggleWater>, 
+    EventWriter<BlockSelected>, 
+    EventWriter<FillWater>
 ) {
-    for event in selection.read() {
-        let left_selected = buttons.pressed(MouseButton::Left);
-        let right_selected = buttons.pressed(MouseButton::Right);
-
-        if let Ok(mut block) = blocks.get_mut(event.entity) {
-            block.layer += if left_selected {
-                SHIFT_AMOUNT
-            } else if right_selected {
-                -SHIFT_AMOUNT
-            } else {
-                0.0
-            };
-
-            commands
-                .entity(event.entity)
-                .insert(Shifting { up: left_selected });
+    move |trigger, toggle, mut selection, mut fill| {
+        if toggle.0 {
+            fill.send(FillWater { entity: trigger.entity() });
+        } else {
+            selection.send(BlockSelected { entity: trigger.entity() });
         }
     }
 }
