@@ -29,17 +29,17 @@ pub fn update_material_on<E>(
 }
 
 /// An observer that runs the selection event
-pub fn update_block_selection<E>() -> impl Fn(
-    Trigger<E>, 
-    Res<ToggleWater>, 
-    EventWriter<BlockSelected>, 
-    EventWriter<FillWater>
-) {
+pub fn update_block_selection<E>(
+) -> impl Fn(Trigger<E>, Res<ToggleWater>, EventWriter<BlockSelected>, EventWriter<FillWater>) {
     move |trigger, toggle, mut selection, mut fill| {
         if toggle.0 {
-            fill.send(FillWater { entity: trigger.entity() });
+            fill.send(FillWater {
+                block: trigger.entity(),
+            });
         } else {
-            selection.send(BlockSelected { entity: trigger.entity() });
+            selection.send(BlockSelected {
+                entity: trigger.entity(),
+            });
         }
     }
 }

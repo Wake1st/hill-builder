@@ -12,8 +12,8 @@ pub struct WaterPlugin;
 impl Plugin for WaterPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ToggleWater(false));
-        app.add_event::<FillWater>();
-        app.add_systems(Update, (toggle_water, fill_water));
+        app.add_event::<FillWater>().add_event::<CheckWater>();
+        app.add_systems(Update, (toggle_water, check_water, fill_water));
     }
 }
 
@@ -26,14 +26,40 @@ fn toggle_water(keys: Res<ButtonInput<KeyCode>>, mut toggle: ResMut<ToggleWater>
     }
 }
 
-#[derive(Event)]
-pub struct FillWater {
-    pub entity: Entity,
-}
-
 #[derive(Component, Debug, Default)]
 pub struct Water {
     pub amount: f32,
+    pub rate: f32,
+}
+
+#[derive(Event)]
+pub struct CheckWater {
+    pub block: Entity,
+}
+
+fn check_water(
+    mut event: EventReader<CheckWater>,
+    blocks: Query<&Children, With<Block>>,
+    mut check_drainable: EventWriter<CheckDrainable>,
+) {
+    for check in event.read() {
+        let Ok(children) = blocks.get(check.block) else {
+            continue;
+        };
+        for &child in children.iter() {
+            check_drainable.send(CheckDrainable {
+                block: check.block,
+                water: child,
+            });
+
+            break;
+        }
+    }
+}
+
+#[derive(Event)]
+pub struct FillWater {
+    pub block: Entity,
 }
 
 fn fill_water(
@@ -43,19 +69,19 @@ fn fill_water(
     mut check_drainable: EventWriter<CheckDrainable>,
 ) {
     for fill in event.read() {
-        let Ok(children) = blocks.get(fill.entity) else {
+        let Ok(children) = blocks.get(fill.block) else {
             continue;
         };
         for &child in children.iter() {
             let Ok((mut water, mut transform)) = waters.get_mut(child) else {
                 continue;
             };
-    
-            water.amount = SHIFT_AMOUNT;
-            transform.translation.y = 0.0;
+
+            water.amount += SHIFT_AMOUNT;
+            transform.translation.y += SHIFT_AMOUNT;
 
             check_drainable.send(CheckDrainable {
-                block: fill.entity,
+                block: fill.block,
                 water: child,
             });
 

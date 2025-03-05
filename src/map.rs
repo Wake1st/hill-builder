@@ -2,7 +2,11 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    block::{Block, BlockBundle}, mesh::create_cube_mesh, neighborhood::Neighborhood, selection::{update_block_selection, update_material_on}, shifting::SHIFT_AMOUNT, water::{Water, WATER_COLOR, WATER_MESH_SCALE}
+    block::{Block, BlockBundle},
+    mesh::create_cube_mesh,
+    neighborhood::Neighborhood,
+    selection::{update_block_selection, update_material_on},
+    water::{CheckWater, Water, WATER_COLOR, WATER_MESH_SCALE},
 };
 
 const MAP_SIZE_DEFAULT: i32 = 8;
@@ -16,10 +20,16 @@ impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(CurrentMapSettings::default());
 
-        app.add_event::<GenerateMap>()
-            .add_event::<ClearMap>();
-        
-        app.add_systems(Update, (clear_map, store_map, (generate_map, allocate_neighbors).chain()));
+        app.add_event::<GenerateMap>().add_event::<ClearMap>();
+
+        app.add_systems(
+            Update,
+            (
+                clear_map,
+                store_map,
+                (generate_map, allocate_neighbors, check_all_water_blocks).chain(),
+            ),
+        );
     }
 }
 
@@ -44,9 +54,9 @@ pub struct MapGenerationSettings {
 
 impl Default for MapGenerationSettings {
     fn default() -> Self {
-        Self { 
-            size: MAP_SIZE_DEFAULT, 
-            terrain: Default::default() 
+        Self {
+            size: MAP_SIZE_DEFAULT,
+            terrain: Default::default(),
         }
     }
 }
@@ -55,7 +65,7 @@ impl Default for MapGenerationSettings {
 pub enum TerrainSettings {
     #[default]
     FLAT,
-    CURVED(CurvedTerrainSettings)
+    CURVED(CurvedTerrainSettings),
 }
 
 #[derive(Resource, Default, Debug, Clone, Serialize, Deserialize)]
@@ -78,10 +88,7 @@ fn clear_map(
     }
 }
 
-fn store_map(
-    mut event: EventReader<GenerateMap>,
-    mut settings: ResMut<CurrentMapSettings>
-) {
+fn store_map(mut event: EventReader<GenerateMap>, mut settings: ResMut<CurrentMapSettings>) {
     for generation in event.read() {
         settings.value = generation.settings.clone();
     }
@@ -100,7 +107,7 @@ fn generate_map(
 
         let ground_mesh_handle: Handle<Mesh> = meshes.add(create_cube_mesh(None));
         let water_mesh_handle = meshes.add(create_cube_mesh(Some(WATER_MESH_SCALE)));
-    
+
         let map_size = generation.settings.size;
         let map_offset: f32 = (map_size as f32) * (1. + GAP) / 2.0;
 
@@ -123,10 +130,13 @@ fn generate_map(
                     .observe(update_material_on::<Pointer<Out>>(ground_matl.clone()))
                     .observe(update_block_selection::<Pointer<Down>>())
                     .with_child((
-                        Water { amount: 0.0 },
+                        Water {
+                            amount: 0.0,
+                            rate: 0.0,
+                        },
                         Mesh3d(water_mesh_handle.clone()),
                         MeshMaterial3d(water_matl.clone()),
-                        Transform::from_xyz(0.0, SHIFT_AMOUNT, 0.0),
+                        Transform::from_xyz(0.0, 0.0, 0.0),
                     ));
             }
         }
@@ -134,8 +144,7 @@ fn generate_map(
 }
 
 fn generate_layer(x: i32, y: i32, settings: &CurvedTerrainSettings) -> i32 {
-    (settings.amplitude.x
-        * ops::sin(x as f32 * settings.wavelength.x + settings.phase_shift.x)
+    (settings.amplitude.x * ops::sin(x as f32 * settings.wavelength.x + settings.phase_shift.x)
         + settings.vertical_shift.x
         + settings.amplitude.y
             * ops::cos(y as f32 * settings.wavelength.y + settings.phase_shift.y)
@@ -161,5 +170,16 @@ fn allocate_neighbors(
                 neighborhood.back_neighbor = neighbor_entity;
             }
         }
+    }
+}
+
+fn check_all_water_blocks(
+    waters: Query<&Parent, With<Water>>,
+    mut check_water: EventWriter<CheckWater>,
+) {
+    for parent in waters.iter() {
+        check_water.send(CheckWater {
+            block: parent.get(),
+        });
     }
 }

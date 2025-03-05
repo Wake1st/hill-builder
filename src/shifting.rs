@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 
-use crate::{block::Block, neighborhood::Neighborhood, selection::BlockSelected};
+use crate::{
+    block::Block, neighborhood::Neighborhood, selection::BlockSelected, water::CheckWater,
+};
 
 const SHIFT_RATE: f32 = 8.4;
 pub const SHIFT_AMOUNT: f32 = 0.5;
@@ -9,8 +11,10 @@ pub struct ShiftPlugin;
 
 impl Plugin for ShiftPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<ShiftFinished>()
-            .add_systems(Update, (try_shift_selected_block, shift_blocks, shift_neighbors));
+        app.add_event::<ShiftFinished>().add_systems(
+            Update,
+            (try_shift_selected_block, shift_blocks, shift_neighbors),
+        );
     }
 }
 
@@ -57,6 +61,7 @@ fn shift_blocks(
     time: Res<Time>,
     mut shifters: Query<(Entity, &Block, &mut Transform, &Shifting)>,
     mut shift_finished: EventWriter<ShiftFinished>,
+    mut check_water: EventWriter<CheckWater>,
     mut commands: Commands,
 ) {
     let delta = SHIFT_RATE * time.delta_secs();
@@ -85,6 +90,9 @@ fn shift_blocks(
                 up: shifting.up,
                 layer: block.layer,
             });
+
+            //  send event to check the water level
+            check_water.send(CheckWater { block: entity });
 
             //  remove the shifting component
             commands.entity(entity).remove::<Shifting>();

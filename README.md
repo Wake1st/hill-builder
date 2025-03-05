@@ -23,8 +23,8 @@ A simple game about building hills.
   - [x] proc-gen should allow raw input
   - [ ] proc-gen should have types per desired results
 - [ ] shader code - with big maps, will need greater efficiency
+- [ ] water (should be it's own component, separate from the blocks)
 - [ ] different block types
-  - [ ] water: flows downhill at some set rate
   - [ ] sand: 1 layer separation amount
   - [ ] dirt: 2 layer separation amount
   - [ ] clay: 3 layer separation amount
