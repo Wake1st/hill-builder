@@ -1,22 +1,30 @@
-mod block;
+mod console_commands;
+mod draining;
 mod environment;
 mod flying_camera;
+mod grid;
+mod ground;
 mod instructions;
 mod map;
 mod mesh;
+mod neighborhood;
+mod pair;
 mod selection;
 mod shifting;
-mod console_commands;
+mod water;
 
 use bevy::prelude::*;
-use block::BlockPlugin;
 use console_commands::ConComPlugin;
+use draining::DrainingPlugin;
 use environment::EnvironmentPlugin;
 use flying_camera::FlyingCameraPlugin;
+use grid::GridPlugin;
+use ground::GroundPlugin;
 use instructions::InstructionsPlugin;
 use map::MapPlugin;
 use selection::SelectionPlugin;
 use shifting::ShiftPlugin;
+use water::WaterPlugin;
 
 pub struct AppPlugin;
 
@@ -28,8 +36,11 @@ impl Plugin for AppPlugin {
             SelectionPlugin,
             MapPlugin,
             FlyingCameraPlugin,
-            BlockPlugin,
+            GroundPlugin,
+            GridPlugin,
             ShiftPlugin,
+            WaterPlugin,
+            DrainingPlugin,
             InstructionsPlugin,
         ));
     }

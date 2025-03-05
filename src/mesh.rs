@@ -1,7 +1,31 @@
-use bevy::{asset::RenderAssetUsages, prelude::*, render::mesh::{Indices, PrimitiveTopology}};
+use bevy::{
+    asset::RenderAssetUsages,
+    prelude::*,
+    render::mesh::{Indices, PrimitiveTopology},
+};
+
+#[derive(Bundle)]
+pub struct CubeBundle {
+    mesh: Mesh3d,
+    material: MeshMaterial3d<StandardMaterial>,
+}
+
+impl CubeBundle {
+    pub fn new(ground_mesh_handle: Handle<Mesh>, mesh_matl: Handle<StandardMaterial>) -> Self {
+        Self {
+            mesh: Mesh3d(ground_mesh_handle),
+            material: MeshMaterial3d(mesh_matl),
+        }
+    }
+}
 
 #[rustfmt::skip]
-pub fn create_cube_mesh() -> Mesh {
+pub fn create_cube_mesh(scale: Option<f32>) -> Mesh {
+    let sc = match scale {
+        Some(value) => value,
+        None => 1.0
+    };
+
     // Keep the mesh data accessible in future frames to be able to mutate it in toggle_texture.
     Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::MAIN_WORLD | RenderAssetUsages::RENDER_WORLD)
     .with_inserted_attribute(
@@ -12,35 +36,35 @@ pub fn create_cube_mesh() -> Mesh {
         // By centering our mesh around the origin, rotating the mesh preserves its center of mass.
         vec![
             // top (facing towards +y)
-            [-0.5, 0.5, -0.5], // vertex with index 0
-            [0.5, 0.5, -0.5], // vertex with index 1
-            [0.5, 0.5, 0.5], // etc. until 23
-            [-0.5, 0.5, 0.5],
+            [-0.5 * sc, 0.5 * sc, -0.5 * sc],// vertex with index 0
+            [0.5 * sc, 0.5 * sc, -0.5 * sc],// vertex with index 1
+            [0.5 * sc, 0.5 * sc, 0.5 * sc],// etc. until 23
+            [-0.5 * sc, 0.5 * sc, 0.5 * sc],
             // bottom   (-y)
-            [-0.5, -0.5, -0.5],
-            [0.5, -0.5, -0.5],
-            [0.5, -0.5, 0.5],
-            [-0.5, -0.5, 0.5],
+            [-0.5 * sc, -0.5 * sc, -0.5 * sc],
+            [0.5 * sc, -0.5 * sc, -0.5 * sc],
+            [0.5 * sc, -0.5 * sc, 0.5 * sc],
+            [-0.5 * sc, -0.5 * sc, 0.5 * sc],
             // right    (+x)
-            [0.5, 0.0, -0.5],
-            [0.5, 0.0, 0.5],
-            [0.5, 0.5, 0.5], // This vertex is at the same position as vertex with index 2, but they'll have different UV and normal
-            [0.5, 0.5, -0.5],
+            [0.5 * sc, 0.0 * sc, -0.5 * sc],
+            [0.5 * sc, 0.0 * sc, 0.5 * sc],
+            [0.5 * sc, 0.5 * sc, 0.5 * sc],// This vertex is at the same position as vertex with index 2 * sc, but they'll have different UV and normal
+            [0.5 * sc, 0.5 * sc, -0.5 * sc],
             // left     (-x)
-            [-0.5, 0.0, -0.5],
-            [-0.5, 0.0, 0.5],
-            [-0.5, 0.5, 0.5],
-            [-0.5, 0.5, -0.5],
+            [-0.5 * sc, 0.0 * sc, -0.5 * sc],
+            [-0.5 * sc, 0.0 * sc, 0.5 * sc],
+            [-0.5 * sc, 0.5 * sc, 0.5 * sc],
+            [-0.5 * sc, 0.5 * sc, -0.5 * sc],
             // back     (+z)
-            [-0.5, 0.0, 0.5],
-            [-0.5, 0.5, 0.5],
-            [0.5, 0.5, 0.5],
-            [0.5, 0.0, 0.5],
+            [-0.5 * sc, 0.0 * sc, 0.5 * sc],
+            [-0.5 * sc, 0.5 * sc, 0.5 * sc],
+            [0.5 * sc, 0.5 * sc, 0.5 * sc],
+            [0.5 * sc, 0.0 * sc, 0.5 * sc],
             // forward  (-z)
-            [-0.5, 0.0, -0.5],
-            [-0.5, 0.5, -0.5],
-            [0.5, 0.5, -0.5],
-            [0.5, 0.0, -0.5],
+            [-0.5 * sc, 0.0 * sc, -0.5 * sc],
+            [-0.5 * sc, 0.5 * sc, -0.5 * sc],
+            [0.5 * sc, 0.5 * sc, -0.5 * sc],
+            [0.5 * sc, 0.0 * sc, -0.5 * sc],
         ],
     )
     // For meshes with flat shading, normals are orthogonal (pointing out) from the direction of

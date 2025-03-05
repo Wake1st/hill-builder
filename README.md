@@ -2,6 +2,13 @@
 
 A simple game about building hills.
 
+## User Stories
+
+- [ ] user should be able to adjust ground up and down
+  - [ ] user cannot adjust ground when water is present
+- [ ] user needs to move water indirectly to win level
+- [ ] user can reset level easily
+
 ## Notes
 
 - [x] [get mouse world position](https://bevyengine.org/examples/3d-rendering/3d-viewport-to-world/)
@@ -22,16 +29,38 @@ A simple game about building hills.
   - [x] build map and save with CLI
   - [x] proc-gen should allow raw input
   - [ ] proc-gen should have types per desired results
-- [ ] shader code - with big maps, will need greater efficiency
+- [x] water (should be it's own component, separate from the blocks)
+- [ ] water movement
+  - [ ] events
+    - [ ] ground adjustments -> trigger water check
+    - [ ] water check (if needs water) -> trigger adjustment
+      - [ ] get water
+      - [ ] create water
+    - [ ] water adjustment -> sets new level
+  - [ ] systems
+    - [ ] check neighbor compares neighbor water levels
+      - [ ] if no neighbor, water check
+      - [ ] if yes neighbor, set relative drain rate
+    - [ ] move water and mesh
+    - [ ] despawn when no water
+- [ ] dev tools should be contained in their own plugin
+- [ ] add UI using `bevy_lunex`
+- [ ] make a few basic levels
+- [ ] QoL
+  - [ ] bound camera translation - edge cannot pass screen center
+  - [ ] zoom should have more than 2 fixed points
+
+## Stretch
+
+- [ ] rainfall - maps should have rainfall
+  - [ ] frequency: the percentage determining whether or not rain is falling
+  - [ ] amount: the amount of rain falling when it does raining
 - [ ] different block types
-  - [ ] water: flows downhill at some set rate
   - [ ] sand: 1 layer separation amount
   - [ ] dirt: 2 layer separation amount
   - [ ] clay: 3 layer separation amount
   - [ ] rock: 4 layer separation amount
-- [ ] rainfall - maps should have rainfall
-  - [ ] frequency: the percentage determining whether or not rain is falling
-  - [ ] amount: the amount of rain falling when it does raining
+- [ ] shader code - with big maps, will need greater efficiency
 - [ ] ecosystems - will occur automatically given terrain and rainfall conditions
   - [ ] swamp: flatlands, 1 layer deep of water, rains often and a lot
   - [ ] forest: usually hilly geology, rains often, and a fair amount
@@ -50,3 +79,7 @@ A simple game about building hills.
 ## Resources
 
 - [Mesh-Picking](https://bevyengine.org/examples/picking/mesh-picking/)
+- [bevy-console](https://github.com/RichoDemus/bevy-console)
+- [clap](https://docs.rs/clap/latest/clap/)
+- [serde](https://docs.rs/serde/latest/serde/)
+- [bevy_lunex](https://docs.rs/bevy_lunex/latest/bevy_lunex/)

@@ -2,9 +2,13 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    block::{Block, BlockBundle, Neighborhood},
-    mesh::create_cube_mesh,
-    selection::{update_block_selection, update_material_on},
+    draining::CheckDrainable,
+    grid::{GridCell, GridCellBundle},
+    ground::Ground,
+    mesh::{create_cube_mesh, CubeBundle},
+    neighborhood::Neighborhood,
+    selection::{update_ground_selection, update_material_on},
+    water::Water,
 };
 
 const MAP_SIZE_DEFAULT: i32 = 8;
@@ -18,10 +22,16 @@ impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(CurrentMapSettings::default());
 
-        app.add_event::<GenerateMap>()
-            .add_event::<ClearMap>();
-        
-        app.add_systems(Update, (clear_map, store_map, (generate_map, allocate_neighbors).chain()));
+        app.add_event::<GenerateMap>().add_event::<ClearMap>();
+
+        app.add_systems(
+            Update,
+            (
+                clear_map,
+                store_map,
+                (generate_map, allocate_neighbors, check_all_water_cells).chain(),
+            ),
+        );
     }
 }
 
@@ -46,9 +56,9 @@ pub struct MapGenerationSettings {
 
 impl Default for MapGenerationSettings {
     fn default() -> Self {
-        Self { 
-            size: MAP_SIZE_DEFAULT, 
-            terrain: Default::default() 
+        Self {
+            size: MAP_SIZE_DEFAULT,
+            terrain: Default::default(),
         }
     }
 }
@@ -57,7 +67,7 @@ impl Default for MapGenerationSettings {
 pub enum TerrainSettings {
     #[default]
     FLAT,
-    CURVED(CurvedTerrainSettings)
+    CURVED(CurvedTerrainSettings),
 }
 
 #[derive(Resource, Default, Debug, Clone, Serialize, Deserialize)]
@@ -70,20 +80,18 @@ pub struct CurvedTerrainSettings {
 
 fn clear_map(
     mut event: EventReader<ClearMap>,
-    mut blocks: Query<Entity, With<Block>>,
+    mut cells: Query<Entity, With<GridCell>>,
     mut commands: Commands,
 ) {
+    //  TODO: despawn water
     for _ in event.read() {
-        for entity in blocks.iter_mut() {
+        for entity in cells.iter_mut() {
             commands.entity(entity).despawn_recursive();
         }
     }
 }
 
-fn store_map(
-    mut event: EventReader<GenerateMap>,
-    mut settings: ResMut<CurrentMapSettings>
-) {
+fn store_map(mut event: EventReader<GenerateMap>, mut settings: ResMut<CurrentMapSettings>) {
     for generation in event.read() {
         settings.value = generation.settings.clone();
     }
@@ -96,11 +104,11 @@ fn generate_map(
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
     for generation in event.read() {
-
         let hover_matl = materials.add(Color::WHITE);
         let ground_matl = materials.add(GROUND_COLOR);
-        let cube_mesh_handle: Handle<Mesh> = meshes.add(create_cube_mesh());
-        
+
+        let ground_mesh_handle: Handle<Mesh> = meshes.add(create_cube_mesh(None));
+
         let map_size = generation.settings.size;
         let map_offset: f32 = (map_size as f32) * (1. + GAP) / 2.0;
 
@@ -111,27 +119,23 @@ fn generate_map(
                     TerrainSettings::CURVED(settings) => generate_layer(i, j, &settings),
                 };
 
-                // create and save a handle to the mesh.
-
                 // render the mesh with the custom texture, and add the marker.
                 commands
-                    .spawn(BlockBundle::new(
-                        cube_mesh_handle.clone(),
-                        ground_matl.clone(),
-                        map_offset,
-                        IVec3::new(i, j, layer),
+                    .spawn((
+                        Ground,
+                        CubeBundle::new(ground_mesh_handle.clone(), ground_matl.clone()),
+                        GridCellBundle::new(map_offset, IVec3::new(i, j, layer)),
                     ))
                     .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
                     .observe(update_material_on::<Pointer<Out>>(ground_matl.clone()))
-                    .observe(update_block_selection::<Pointer<Down>>());
+                    .observe(update_ground_selection::<Pointer<Down>>());
             }
         }
     }
 }
 
 fn generate_layer(x: i32, y: i32, settings: &CurvedTerrainSettings) -> i32 {
-    (settings.amplitude.x
-        * ops::sin(x as f32 * settings.wavelength.x + settings.phase_shift.x)
+    (settings.amplitude.x * ops::sin(x as f32 * settings.wavelength.x + settings.phase_shift.x)
         + settings.vertical_shift.x
         + settings.amplitude.y
             * ops::cos(y as f32 * settings.wavelength.y + settings.phase_shift.y)
@@ -139,23 +143,32 @@ fn generate_layer(x: i32, y: i32, settings: &CurvedTerrainSettings) -> i32 {
 }
 
 fn allocate_neighbors(
-    mut blocks: Query<(Entity, &Block, &mut Neighborhood)>,
-    neighbors: Query<(Entity, &Block)>,
+    mut cells: Query<(Entity, &GridCell, &mut Neighborhood)>,
+    neighbors: Query<(Entity, &GridCell)>,
 ) {
-    for (_, block, mut neighborhood) in blocks.iter_mut() {
+    for (_, cell, mut neighborhood) in cells.iter_mut() {
         for (neighbor_entity, neighbor) in neighbors.iter() {
-            if block.row - 1 == neighbor.row && block.col == neighbor.col {
+            if cell.row - 1 == neighbor.row && cell.col == neighbor.col {
                 neighborhood.left_neighbor = neighbor_entity;
             }
-            if block.row + 1 == neighbor.row && block.col == neighbor.col {
+            if cell.row + 1 == neighbor.row && cell.col == neighbor.col {
                 neighborhood.right_neighbor = neighbor_entity;
             }
-            if block.col - 1 == neighbor.col && block.row == neighbor.row {
+            if cell.col - 1 == neighbor.col && cell.row == neighbor.row {
                 neighborhood.front_neighbor = neighbor_entity;
             }
-            if block.col + 1 == neighbor.col && block.row == neighbor.row {
+            if cell.col + 1 == neighbor.col && cell.row == neighbor.row {
                 neighborhood.back_neighbor = neighbor_entity;
             }
         }
+    }
+}
+
+fn check_all_water_cells(
+    waters: Query<&Parent, With<Water>>,
+    mut check_water: EventWriter<CheckDrainable>,
+) {
+    for parent in waters.iter() {
+        check_water.send(CheckDrainable { cell: parent.get() });
     }
 }

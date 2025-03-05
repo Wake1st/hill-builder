@@ -1,22 +1,24 @@
 use bevy::prelude::*;
 
-use crate::{
-    block::Block,
-    shifting::{Shifting, SHIFT_AMOUNT},
-};
+use crate::water::{CheckWater, WaterToggle};
 
 pub struct SelectionPlugin;
 
 impl Plugin for SelectionPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(MeshPickingPlugin)
-            .add_event::<BlockSelected>()
-            .add_systems(Update, try_shift_selected_block);
+            .add_event::<GroundSelected>()
+            .add_event::<WaterSelected>();
     }
 }
 
 #[derive(Event, Debug)]
-pub struct BlockSelected {
+pub struct GroundSelected {
+    pub entity: Entity,
+}
+
+#[derive(Event, Debug)]
+pub struct WaterSelected {
     pub entity: Entity,
 }
 
@@ -32,38 +34,27 @@ pub fn update_material_on<E>(
     }
 }
 
-/// An observer that runs the selection event
-pub fn update_block_selection<E>() -> impl Fn(Trigger<E>, EventWriter<BlockSelected>) {
-    move |trigger, mut selection| {
-        selection.send(BlockSelected {
-            entity: trigger.entity(),
-        });
+/// An observer that runs the selection event for ground
+pub fn update_ground_selection<E>(
+) -> impl Fn(Trigger<E>, Res<WaterToggle>, EventWriter<GroundSelected>, EventWriter<CheckWater>) {
+    move |trigger, toggle, mut selection, mut fill| {
+        if toggle.0 {
+            fill.send(CheckWater {
+                cell: trigger.entity(),
+            });
+        } else {
+            selection.send(GroundSelected {
+                entity: trigger.entity(),
+            });
+        }
     }
 }
 
-/// A function that shifts a selected block
-fn try_shift_selected_block(
-    mut selection: EventReader<BlockSelected>,
-    buttons: Res<ButtonInput<MouseButton>>,
-    mut blocks: Query<&mut Block>,
-    mut commands: Commands,
-) {
-    for event in selection.read() {
-        let left_selected = buttons.pressed(MouseButton::Left);
-        let right_selected = buttons.pressed(MouseButton::Right);
-
-        if let Ok(mut block) = blocks.get_mut(event.entity) {
-            block.layer += if left_selected {
-                SHIFT_AMOUNT
-            } else if right_selected {
-                -SHIFT_AMOUNT
-            } else {
-                0.0
-            };
-
-            commands
-                .entity(event.entity)
-                .insert(Shifting { up: left_selected });
-        }
+/// An observer that runs the selection event for water
+pub fn update_water_selection<E>() -> impl Fn(Trigger<E>, EventWriter<WaterSelected>) {
+    move |trigger, mut selection| {
+        selection.send(WaterSelected {
+            entity: trigger.entity(),
+        });
     }
 }
