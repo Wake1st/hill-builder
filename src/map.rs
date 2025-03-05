@@ -2,11 +2,13 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    block::{Block, BlockBundle},
-    mesh::create_cube_mesh,
+    draining::CheckDrainable,
+    grid::{GridCell, GridCellBundle},
+    ground::Ground,
+    mesh::{create_cube_mesh, CubeBundle},
     neighborhood::Neighborhood,
-    selection::{update_block_selection, update_material_on},
-    water::{CheckWater, Water, WATER_COLOR, WATER_MESH_SCALE},
+    selection::{update_ground_selection, update_material_on},
+    water::Water,
 };
 
 const MAP_SIZE_DEFAULT: i32 = 8;
@@ -27,7 +29,7 @@ impl Plugin for MapPlugin {
             (
                 clear_map,
                 store_map,
-                (generate_map, allocate_neighbors, check_all_water_blocks).chain(),
+                (generate_map, allocate_neighbors, check_all_water_cells).chain(),
             ),
         );
     }
@@ -78,11 +80,12 @@ pub struct CurvedTerrainSettings {
 
 fn clear_map(
     mut event: EventReader<ClearMap>,
-    mut blocks: Query<Entity, With<Block>>,
+    mut cells: Query<Entity, With<GridCell>>,
     mut commands: Commands,
 ) {
+    //  TODO: despawn water
     for _ in event.read() {
-        for entity in blocks.iter_mut() {
+        for entity in cells.iter_mut() {
             commands.entity(entity).despawn_recursive();
         }
     }
@@ -103,10 +106,8 @@ fn generate_map(
     for generation in event.read() {
         let hover_matl = materials.add(Color::WHITE);
         let ground_matl = materials.add(GROUND_COLOR);
-        let water_matl = materials.add(WATER_COLOR);
 
         let ground_mesh_handle: Handle<Mesh> = meshes.add(create_cube_mesh(None));
-        let water_mesh_handle = meshes.add(create_cube_mesh(Some(WATER_MESH_SCALE)));
 
         let map_size = generation.settings.size;
         let map_offset: f32 = (map_size as f32) * (1. + GAP) / 2.0;
@@ -120,24 +121,14 @@ fn generate_map(
 
                 // render the mesh with the custom texture, and add the marker.
                 commands
-                    .spawn(BlockBundle::new(
-                        ground_mesh_handle.clone(),
-                        ground_matl.clone(),
-                        map_offset,
-                        IVec3::new(i, j, layer),
+                    .spawn((
+                        Ground,
+                        CubeBundle::new(ground_mesh_handle.clone(), ground_matl.clone()),
+                        GridCellBundle::new(map_offset, IVec3::new(i, j, layer)),
                     ))
                     .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
                     .observe(update_material_on::<Pointer<Out>>(ground_matl.clone()))
-                    .observe(update_block_selection::<Pointer<Down>>())
-                    .with_child((
-                        Water {
-                            amount: 0.0,
-                            rate: 0.0,
-                        },
-                        Mesh3d(water_mesh_handle.clone()),
-                        MeshMaterial3d(water_matl.clone()),
-                        Transform::from_xyz(0.0, 0.0, 0.0),
-                    ));
+                    .observe(update_ground_selection::<Pointer<Down>>());
             }
         }
     }
@@ -152,34 +143,32 @@ fn generate_layer(x: i32, y: i32, settings: &CurvedTerrainSettings) -> i32 {
 }
 
 fn allocate_neighbors(
-    mut blocks: Query<(Entity, &Block, &mut Neighborhood)>,
-    neighbors: Query<(Entity, &Block)>,
+    mut cells: Query<(Entity, &GridCell, &mut Neighborhood)>,
+    neighbors: Query<(Entity, &GridCell)>,
 ) {
-    for (_, block, mut neighborhood) in blocks.iter_mut() {
+    for (_, cell, mut neighborhood) in cells.iter_mut() {
         for (neighbor_entity, neighbor) in neighbors.iter() {
-            if block.row - 1 == neighbor.row && block.col == neighbor.col {
+            if cell.row - 1 == neighbor.row && cell.col == neighbor.col {
                 neighborhood.left_neighbor = neighbor_entity;
             }
-            if block.row + 1 == neighbor.row && block.col == neighbor.col {
+            if cell.row + 1 == neighbor.row && cell.col == neighbor.col {
                 neighborhood.right_neighbor = neighbor_entity;
             }
-            if block.col - 1 == neighbor.col && block.row == neighbor.row {
+            if cell.col - 1 == neighbor.col && cell.row == neighbor.row {
                 neighborhood.front_neighbor = neighbor_entity;
             }
-            if block.col + 1 == neighbor.col && block.row == neighbor.row {
+            if cell.col + 1 == neighbor.col && cell.row == neighbor.row {
                 neighborhood.back_neighbor = neighbor_entity;
             }
         }
     }
 }
 
-fn check_all_water_blocks(
+fn check_all_water_cells(
     waters: Query<&Parent, With<Water>>,
-    mut check_water: EventWriter<CheckWater>,
+    mut check_water: EventWriter<CheckDrainable>,
 ) {
     for parent in waters.iter() {
-        check_water.send(CheckWater {
-            block: parent.get(),
-        });
+        check_water.send(CheckDrainable { cell: parent.get() });
     }
 }

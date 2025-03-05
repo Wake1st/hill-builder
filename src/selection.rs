@@ -1,18 +1,24 @@
 use bevy::prelude::*;
 
-use crate::water::{FillWater, ToggleWater};
+use crate::water::{FillWater, WaterToggle};
 
 pub struct SelectionPlugin;
 
 impl Plugin for SelectionPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(MeshPickingPlugin)
-            .add_event::<BlockSelected>();
+            .add_event::<GroundSelected>()
+            .add_event::<WaterSelected>();
     }
 }
 
 #[derive(Event, Debug)]
-pub struct BlockSelected {
+pub struct GroundSelected {
+    pub entity: Entity,
+}
+
+#[derive(Event, Debug)]
+pub struct WaterSelected {
     pub entity: Entity,
 }
 
@@ -28,18 +34,27 @@ pub fn update_material_on<E>(
     }
 }
 
-/// An observer that runs the selection event
-pub fn update_block_selection<E>(
-) -> impl Fn(Trigger<E>, Res<ToggleWater>, EventWriter<BlockSelected>, EventWriter<FillWater>) {
+/// An observer that runs the selection event for ground
+pub fn update_ground_selection<E>(
+) -> impl Fn(Trigger<E>, Res<WaterToggle>, EventWriter<GroundSelected>, EventWriter<FillWater>) {
     move |trigger, toggle, mut selection, mut fill| {
         if toggle.0 {
             fill.send(FillWater {
-                block: trigger.entity(),
+                cell: trigger.entity(),
             });
         } else {
-            selection.send(BlockSelected {
+            selection.send(GroundSelected {
                 entity: trigger.entity(),
             });
         }
+    }
+}
+
+/// An observer that runs the selection event for water
+pub fn update_water_selection<E>() -> impl Fn(Trigger<E>, EventWriter<WaterSelected>) {
+    move |trigger, mut selection| {
+        selection.send(WaterSelected {
+            entity: trigger.entity(),
+        });
     }
 }

@@ -25,6 +25,9 @@ A simple game about building hills.
 - [ ] water (should be it's own component, separate from the blocks)
 - [ ] add UI using `bevy_lunex`
 - [ ] make a few basic levels
+- [ ] QoL
+  - [ ] bound camera translation - edge cannot pass screen center
+  - [ ] zoom should have more than 2 fixed points
 
 ## Stretch
 

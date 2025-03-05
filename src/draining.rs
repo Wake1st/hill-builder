@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{block::Block, neighborhood::Neighborhood, water::Water};
+use crate::{grid::GridCell, neighborhood::Neighborhood, water::Water};
 
 pub struct DrainingPlugin;
 
@@ -19,55 +19,54 @@ pub struct Draining;
 
 #[derive(Event)]
 pub struct CheckDrainable {
-    pub block: Entity,
-    pub water: Entity,
+    pub cell: Entity,
 }
 
 fn check_drainable(
     mut event: EventReader<CheckDrainable>,
-    blocks: Query<(&Block, &Neighborhood)>,
-    neighbors: Query<&Block>,
+    cells: Query<(&GridCell, &Neighborhood)>,
+    neighbors: Query<&GridCell>,
     mut commands: Commands,
 ) {
     for check in event.read() {
         let mut draining_amount: f32 = 0.0;
 
-        let Ok((block, neighborhood)) = blocks.get(check.block) else {
+        let Ok((cell, neighborhood)) = cells.get(check.cell) else {
             continue;
         };
 
         //  add the draining value
-        // info!("checking {:?}...", check.block);
+        // info!("checking {:?}...", check.cell);
         for neighbor_entity in neighborhood.get_neighbors().iter() {
-            let Ok(neighbor_block) = neighbors.get(*neighbor_entity) else {
+            let Ok(neighbor_cell) = neighbors.get(*neighbor_entity) else {
                 continue;
             };
 
             //  calculate if there is a layer change
-            let separation = (neighbor_block.layer - block.layer).max(0.0);
+            let separation = (neighbor_cell.layer - cell.layer).max(0.0);
             draining_amount += separation;
             // info!("\t+= {:?}", separation);
         }
 
-        //  ensure the block only shifts when required
+        //  ensure the cell only shifts when required
         // info!("total = {:?}", draining_amount);
         if draining_amount != 0.0 {
-            commands.entity(check.water).insert(Draining::default());
+            commands.entity(check.cell).insert(Draining::default());
         }
     }
 }
 
 fn set_drain_rate(
     mut drainers: Query<(&Parent, &GlobalTransform, &mut Water)>,
-    blocks: Query<&Neighborhood>,
-    neighbors: Query<&Children, With<Block>>,
+    cells: Query<&Neighborhood>,
+    neighbors: Query<&Children, With<GridCell>>,
     waters: Query<&GlobalTransform, With<Water>>,
 ) {
     for (parent, water_transform, mut water) in drainers.iter_mut() {
         let water_level = water_transform.translation().y;
         let mut drain_rate: f32 = 0.0;
 
-        let Ok(neighborhood) = blocks.get(**parent) else {
+        let Ok(neighborhood) = cells.get(**parent) else {
             continue;
         };
 
@@ -110,14 +109,14 @@ fn drain(mut waters: Query<(&mut Water, &mut Transform)>, time: Res<Time>) {
 
 fn remove_draining(
     waters: Query<(Entity, &Parent, &GlobalTransform)>,
-    blocks: Query<&GlobalTransform, With<Block>>,
+    cells: Query<&GlobalTransform, With<GridCell>>,
     mut commands: Commands,
 ) {
     for (entity, parent, water_transform) in waters.iter() {
-        let Ok(block_transform) = blocks.get(parent.get()) else {
+        let Ok(cell_transform) = cells.get(parent.get()) else {
             continue;
         };
-        if water_transform.translation().y < block_transform.translation().y {
+        if water_transform.translation().y < cell_transform.translation().y {
             commands.entity(entity).remove::<Draining>();
         }
     }

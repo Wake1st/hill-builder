@@ -1,4 +1,23 @@
-use bevy::{asset::RenderAssetUsages, prelude::*, render::mesh::{Indices, PrimitiveTopology}};
+use bevy::{
+    asset::RenderAssetUsages,
+    prelude::*,
+    render::mesh::{Indices, PrimitiveTopology},
+};
+
+#[derive(Bundle)]
+pub struct CubeBundle {
+    mesh: Mesh3d,
+    material: MeshMaterial3d<StandardMaterial>,
+}
+
+impl CubeBundle {
+    pub fn new(ground_mesh_handle: Handle<Mesh>, mesh_matl: Handle<StandardMaterial>) -> Self {
+        Self {
+            mesh: Mesh3d(ground_mesh_handle),
+            material: MeshMaterial3d(mesh_matl),
+        }
+    }
+}
 
 #[rustfmt::skip]
 pub fn create_cube_mesh(scale: Option<f32>) -> Mesh {
