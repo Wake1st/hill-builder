@@ -5,6 +5,7 @@ use crate::{
     grid::{GridCell, CELL_HEIGHT},
     ground::Ground,
     mesh::{create_cube_mesh, CubeBundle},
+    pair::Pair,
     selection::{update_water_selection, WaterSelected},
 };
 
@@ -18,8 +19,11 @@ pub struct WaterPlugin;
 impl Plugin for WaterPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(WaterToggle(false));
-        app.add_event::<FillWater>();
-        app.add_systems(Update, (toggle_water, fill_water, increase_water));
+        app.add_event::<SpawnWater>().add_event::<CheckWater>();
+        app.add_systems(
+            Update,
+            (toggle_water, spawn_water, check_water, increase_water),
+        );
     }
 }
 
@@ -39,25 +43,24 @@ pub struct Water {
 }
 
 #[derive(Event)]
-pub struct FillWater {
-    pub cell: Entity,
+pub struct SpawnWater {
+    pub ground: Entity,
 }
 
-fn fill_water(
-    mut event: EventReader<FillWater>,
-    grounds: Query<(&GridCell, &GlobalTransform), (With<Ground>, Without<Water>)>,
+fn spawn_water(
+    mut event: EventReader<SpawnWater>,
+    grounds: Query<(Entity, &GridCell, &GlobalTransform), (With<Ground>, Without<Water>)>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut commands: Commands,
     mut check_drainable: EventWriter<CheckDrainable>,
 ) {
-    for fill in event.read() {
+    for spawn in event.read() {
         //  get the ground data
-        let Ok((ground_cell, ground_transform)) = grounds.get(fill.cell) else {
+        let Ok((ground_entity, ground_cell, ground_transform)) = grounds.get(spawn.ground) else {
             continue;
         };
 
-        //  spawning new water
         let mesh_handle = meshes.add(create_cube_mesh(Some(WATER_MESH_SCALE)));
         let mesh_matl = materials.add(WATER_COLOR);
 
@@ -77,7 +80,53 @@ fn fill_water(
             .observe(update_water_selection::<Pointer<Down>>())
             .id();
 
+        commands.spawn((
+            Name::new("Pair"),
+            Pair {
+                ground: ground_entity,
+                water: water_entity,
+            },
+        ));
+
         check_drainable.send(CheckDrainable { cell: water_entity });
+    }
+}
+
+#[derive(Event)]
+pub struct CheckWater {
+    pub cell: Entity,
+}
+
+fn check_water(
+    mut event: EventReader<CheckWater>,
+    grounds: Query<Entity, (With<Ground>, Without<Water>)>,
+    pairs: Query<&Pair>,
+    mut water_selected: EventWriter<WaterSelected>,
+    mut spawn_water: EventWriter<SpawnWater>,
+) {
+    for fill in event.read() {
+        //  get the ground data
+        let Ok(ground_entity) = grounds.get(fill.cell) else {
+            continue;
+        };
+
+        //  find current water, if exists
+        let mut pair_found: bool = false;
+        for pair in pairs.iter() {
+            if pair.ground == ground_entity {
+                water_selected.send(WaterSelected { entity: pair.water });
+
+                pair_found = true;
+                break;
+            }
+        }
+
+        //  spawning new water and pair if none exists
+        if !pair_found {
+            spawn_water.send(SpawnWater {
+                ground: ground_entity,
+            });
+        }
     }
 }
 
