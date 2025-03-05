@@ -22,16 +22,21 @@ A simple game about building hills.
   - [x] build map and save with CLI
   - [x] proc-gen should allow raw input
   - [ ] proc-gen should have types per desired results
-- [ ] shader code - with big maps, will need greater efficiency
 - [ ] water (should be it's own component, separate from the blocks)
+- [ ] add UI using `bevy_lunex`
+- [ ] make a few basic levels
+
+## Stretch
+
+- [ ] rainfall - maps should have rainfall
+  - [ ] frequency: the percentage determining whether or not rain is falling
+  - [ ] amount: the amount of rain falling when it does raining
 - [ ] different block types
   - [ ] sand: 1 layer separation amount
   - [ ] dirt: 2 layer separation amount
   - [ ] clay: 3 layer separation amount
   - [ ] rock: 4 layer separation amount
-- [ ] rainfall - maps should have rainfall
-  - [ ] frequency: the percentage determining whether or not rain is falling
-  - [ ] amount: the amount of rain falling when it does raining
+- [ ] shader code - with big maps, will need greater efficiency
 - [ ] ecosystems - will occur automatically given terrain and rainfall conditions
   - [ ] swamp: flatlands, 1 layer deep of water, rains often and a lot
   - [ ] forest: usually hilly geology, rains often, and a fair amount
@@ -50,3 +55,7 @@ A simple game about building hills.
 ## Resources
 
 - [Mesh-Picking](https://bevyengine.org/examples/picking/mesh-picking/)
+- [bevy-console](https://github.com/RichoDemus/bevy-console)
+- [clap](https://docs.rs/clap/latest/clap/)
+- [serde](https://docs.rs/serde/latest/serde/)
+- [bevy_lunex](https://docs.rs/bevy_lunex/latest/bevy_lunex/)
