@@ -1,11 +1,11 @@
 use bevy::prelude::*;
 
 use crate::{
-    water::CheckWater,
-    grid::{GridCell, CELL_HEIGHT},
-    ground::Ground,
-    neighborhood::Neighborhood,
-    selection::GroundSelected,
+    grid::{GridCell, CELL_HEIGHT}, 
+    ground::Ground, 
+    neighborhood::Neighborhood, 
+    selection::GroundSelected, 
+    water::TryShiftWater
 };
 
 const SHIFT_RATE: f32 = 8.4;
@@ -64,7 +64,7 @@ fn shift_cells(
     time: Res<Time>,
     mut shifters: Query<(Entity, &GridCell, &mut Transform, &Shifting), With<Ground>>,
     mut shift_finished: EventWriter<ShiftFinished>,
-    mut check_water: EventWriter<CheckWater>,
+    mut try_shift_water: EventWriter<TryShiftWater>,
     mut commands: Commands,
 ) {
     let delta = SHIFT_RATE * time.delta_secs();
@@ -95,7 +95,7 @@ fn shift_cells(
             });
 
             //  send event to check the water level
-            check_water.send(CheckWater { cell: entity, shifting_upward: shifting.up });
+            try_shift_water.send(TryShiftWater { cell: entity, shifting_upward: shifting.up });
 
             //  remove the shifting component
             commands.entity(entity).remove::<Shifting>();
@@ -106,7 +106,7 @@ fn shift_cells(
 fn shift_neighbors(
     mut shift_finished: EventReader<ShiftFinished>,
     cells: Query<&Neighborhood, With<Ground>>,
-    mut neighbors: Query<&mut GridCell>,
+    mut neighbors: Query<&mut GridCell, With<Ground>>,
     mut commands: Commands,
 ) {
     for shift in shift_finished.read() {

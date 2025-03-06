@@ -16,7 +16,7 @@ impl Plugin for FluidDynamicsPlugin {
 }
 
 fn check_neighbors(
-    mut waters: Query<(Entity, &GlobalTransform, &GridCell)>,
+    mut waters: Query<(Entity, &GlobalTransform, &GridCell), (With<Water>, Without<Ground>)>,
     neighborhoods: Query<&Neighborhood, (With<Water>, Without<Ground>)>,
     mut ground_check: EventWriter<CheckGroundForDraining>,
 ) {

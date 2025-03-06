@@ -12,11 +12,11 @@ pub struct WaterPlugin;
 impl Plugin for WaterPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<SpawnWater>()
-            .add_event::<CheckWater>()
+            .add_event::<TryShiftWater>()
             .add_event::<ShiftWater>();
         app.add_systems(Update, (
             spawn_water, 
-            check_water, 
+            try_shift_water, 
             shift_water, 
             despawn_water, 
             connect_water_neighbors
@@ -79,17 +79,16 @@ fn spawn_water(
 }
 
 #[derive(Event)]
-pub struct CheckWater {
+pub struct TryShiftWater {
     pub cell: Entity,
     pub shifting_upward: bool,
 }
 
-fn check_water(
-    mut event: EventReader<CheckWater>,
+fn try_shift_water(
+    mut event: EventReader<TryShiftWater>,
     grounds: Query<Entity, (With<Ground>, Without<Water>)>,
     pairs: Query<&Pair>,
     mut water_selected: EventWriter<ShiftWater>,
-    mut spawn_water: EventWriter<SpawnWater>,
 ) {
     for check in event.read() {
         //  get the ground data
@@ -98,25 +97,14 @@ fn check_water(
         };
 
         //  find current water, if exists
-        let mut pair_found: bool = false;
         for pair in pairs.iter() {
             if pair.ground == ground_entity {
                 water_selected.send(ShiftWater { entity: pair.water, upward: check.shifting_upward });
-
-                pair_found = true;
                 break;
             }
         }
-
-        //  spawning new water and pair if none exists
-        if !pair_found {
-            spawn_water.send(SpawnWater {
-                ground: ground_entity,
-            });
-        }
     }
 }
-
 
 #[derive(Event, Debug)]
 pub struct ShiftWater {
