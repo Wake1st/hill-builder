@@ -1,15 +1,13 @@
 use bevy::prelude::*;
 
 use crate::{
+    dev::user_testing::{update_water_selection, WaterSelected},
     draining::CheckDrainable,
     grid::{GridCell, CELL_HEIGHT},
     ground::Ground,
     mesh::{create_cube_mesh, CubeBundle},
     pair::Pair,
-    selection::{update_water_selection, WaterSelected},
 };
-
-pub const FILL_KEY: KeyCode = KeyCode::Tab;
 
 pub const WATER_MESH_SCALE: f32 = 0.98;
 pub const WATER_COLOR: Color = Color::srgb(0.0, 0.2, 0.9);
@@ -18,21 +16,8 @@ pub struct WaterPlugin;
 
 impl Plugin for WaterPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(WaterToggle(false));
         app.add_event::<SpawnWater>().add_event::<CheckWater>();
-        app.add_systems(
-            Update,
-            (toggle_water, spawn_water, check_water, increase_water),
-        );
-    }
-}
-
-#[derive(Resource)]
-pub struct WaterToggle(pub bool);
-
-pub fn toggle_water(keys: Res<ButtonInput<KeyCode>>, mut toggle: ResMut<WaterToggle>) {
-    if keys.just_pressed(FILL_KEY) {
-        toggle.0 = !toggle.0;
+        app.add_systems(Update, (create_water, check_water, increase_water));
     }
 }
 
@@ -47,7 +32,7 @@ pub struct SpawnWater {
     pub ground: Entity,
 }
 
-fn spawn_water(
+fn create_water(
     mut event: EventReader<SpawnWater>,
     grounds: Query<(Entity, &GridCell, &GlobalTransform), (With<Ground>, Without<Water>)>,
     mut materials: ResMut<Assets<StandardMaterial>>,

@@ -1,13 +1,14 @@
 use bevy::prelude::*;
 
-use crate::water::{toggle_water, WaterToggle, FILL_KEY};
+use super::user_testing::{WaterToggle, WaterToggled};
 
 pub struct InstructionsPlugin;
 
 impl Plugin for InstructionsPlugin {
     fn build(&self, app: &mut App) {
+        app.add_event::<WaterToggled>();
         app.add_systems(Startup, setup)
-            .add_systems(Update, toggle_water_display.after(toggle_water));
+            .add_systems(Update, toggle_water_display);
     }
 }
 
@@ -40,11 +41,11 @@ fn setup(mut commands: Commands, water_toggle: Res<WaterToggle>) {
 }
 
 fn toggle_water_display(
-    keys: Res<ButtonInput<KeyCode>>,
-    toggle: ResMut<WaterToggle>,
-    mut query: Query<&mut TextSpan, With<WaterToggleText>>,
+    mut toggled: EventReader<WaterToggled>,
+    toggle: Res<WaterToggle>,
+    mut query: Query<&mut Text, With<WaterToggleText>>,
 ) {
-    if keys.just_pressed(FILL_KEY) {
+    for _ in toggled.read() {
         if let Ok(mut text) = query.get_single_mut() {
             **text = format!("Water toggled: {:?}", toggle.0);
         };
