@@ -1,24 +1,18 @@
 use bevy::prelude::*;
 
-use crate::water::{CheckWater, WaterToggle};
+use crate::{dev::user_testing::WaterToggle, water::CheckWater};
 
 pub struct SelectionPlugin;
 
 impl Plugin for SelectionPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(MeshPickingPlugin)
-            .add_event::<GroundSelected>()
-            .add_event::<WaterSelected>();
+            .add_event::<GroundSelected>();
     }
 }
 
 #[derive(Event, Debug)]
 pub struct GroundSelected {
-    pub entity: Entity,
-}
-
-#[derive(Event, Debug)]
-pub struct WaterSelected {
     pub entity: Entity,
 }
 
@@ -47,14 +41,5 @@ pub fn update_ground_selection<E>(
                 entity: trigger.entity(),
             });
         }
-    }
-}
-
-/// An observer that runs the selection event for water
-pub fn update_water_selection<E>() -> impl Fn(Trigger<E>, EventWriter<WaterSelected>) {
-    move |trigger, mut selection| {
-        selection.send(WaterSelected {
-            entity: trigger.entity(),
-        });
     }
 }
