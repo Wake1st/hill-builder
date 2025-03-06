@@ -2,13 +2,11 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    draining::CheckDrainable,
     grid::{GridCell, GridCellBundle},
     ground::Ground,
     mesh::{create_cube_mesh, CubeBundle},
     neighborhood::Neighborhood,
-    selection::{update_ground_selection, update_material_on},
-    water::Water,
+    selection::{update_ground_selection, update_material_on}, water::Water,
 };
 
 const MAP_SIZE_DEFAULT: i32 = 8;
@@ -29,7 +27,7 @@ impl Plugin for MapPlugin {
             (
                 clear_map,
                 store_map,
-                (generate_map, allocate_neighbors, check_all_water_cells).chain(),
+                (generate_map, connect_ground_neighbors).chain(),
             ),
         );
     }
@@ -142,11 +140,11 @@ fn generate_layer(x: i32, y: i32, settings: &CurvedTerrainSettings) -> i32 {
         + settings.vertical_shift.y) as i32
 }
 
-fn allocate_neighbors(
-    mut cells: Query<(Entity, &GridCell, &mut Neighborhood)>,
-    neighbors: Query<(Entity, &GridCell)>,
+fn connect_ground_neighbors(
+    mut cells: Query<(&GridCell, &mut Neighborhood), (With<Ground>, Without<Water>)>,
+    neighbors: Query<(Entity, &GridCell), (With<Ground>, Without<Water>)>,
 ) {
-    for (_, cell, mut neighborhood) in cells.iter_mut() {
+    for (cell, mut neighborhood) in cells.iter_mut() {
         for (neighbor_entity, neighbor) in neighbors.iter() {
             if cell.row - 1 == neighbor.row && cell.col == neighbor.col {
                 neighborhood.left_neighbor = neighbor_entity;
@@ -161,14 +159,5 @@ fn allocate_neighbors(
                 neighborhood.back_neighbor = neighbor_entity;
             }
         }
-    }
-}
-
-fn check_all_water_cells(
-    waters: Query<&Parent, With<Water>>,
-    mut check_water: EventWriter<CheckDrainable>,
-) {
-    for parent in waters.iter() {
-        check_water.send(CheckDrainable { cell: parent.get() });
     }
 }

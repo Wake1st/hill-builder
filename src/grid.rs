@@ -70,12 +70,7 @@ impl GridCellBundle {
         Self {
             transform: Transform::from_grid_coordinates(grid_coordinates, grid_offset),
             cell: GridCell::from_grid_coordinates(grid_coordinates, grid_offset),
-            neighborhood: Neighborhood {
-                left_neighbor: Entity::PLACEHOLDER,
-                right_neighbor: Entity::PLACEHOLDER,
-                front_neighbor: Entity::PLACEHOLDER,
-                back_neighbor: Entity::PLACEHOLDER,
-            },
+            neighborhood: Neighborhood::default(),
         }
     }
 }

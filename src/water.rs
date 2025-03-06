@@ -1,12 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    dev::user_testing::{update_water_selection, WaterSelected},
-    draining::CheckDrainable,
-    grid::{GridCell, CELL_HEIGHT},
-    ground::Ground,
-    mesh::{create_cube_mesh, CubeBundle},
-    pair::Pair,
+    dev::user_testing::update_water_selection, grid::{GridCell, CELL_HEIGHT}, ground::Ground, mesh::{create_cube_mesh, CubeBundle}, neighborhood::Neighborhood, pair::Pair
 };
 
 pub const WATER_MESH_SCALE: f32 = 0.98;
@@ -16,8 +11,16 @@ pub struct WaterPlugin;
 
 impl Plugin for WaterPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<SpawnWater>().add_event::<CheckWater>();
-        app.add_systems(Update, (create_water, check_water, increase_water));
+        app.add_event::<SpawnWater>()
+            .add_event::<CheckWater>()
+            .add_event::<ShiftWater>();
+        app.add_systems(Update, (
+            spawn_water, 
+            check_water, 
+            shift_water, 
+            despawn_water, 
+            connect_water_neighbors
+        ));
     }
 }
 
@@ -32,13 +35,12 @@ pub struct SpawnWater {
     pub ground: Entity,
 }
 
-fn create_water(
+fn spawn_water(
     mut event: EventReader<SpawnWater>,
     grounds: Query<(Entity, &GridCell, &GlobalTransform), (With<Ground>, Without<Water>)>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut commands: Commands,
-    mut check_drainable: EventWriter<CheckDrainable>,
 ) {
     for spawn in event.read() {
         //  get the ground data
@@ -60,6 +62,7 @@ fn create_water(
                     ground_transform.translation() + Vec3::new(0.0, CELL_HEIGHT, 0.0),
                 ),
                 GridCell::from_grid_cell(ground_cell, CELL_HEIGHT),
+                Neighborhood::default(),
                 CubeBundle::new(mesh_handle, mesh_matl),
             ))
             .observe(update_water_selection::<Pointer<Down>>())
@@ -72,26 +75,25 @@ fn create_water(
                 water: water_entity,
             },
         ));
-
-        check_drainable.send(CheckDrainable { cell: water_entity });
     }
 }
 
 #[derive(Event)]
 pub struct CheckWater {
     pub cell: Entity,
+    pub shifting_upward: bool,
 }
 
 fn check_water(
     mut event: EventReader<CheckWater>,
     grounds: Query<Entity, (With<Ground>, Without<Water>)>,
     pairs: Query<&Pair>,
-    mut water_selected: EventWriter<WaterSelected>,
+    mut water_selected: EventWriter<ShiftWater>,
     mut spawn_water: EventWriter<SpawnWater>,
 ) {
-    for fill in event.read() {
+    for check in event.read() {
         //  get the ground data
-        let Ok(ground_entity) = grounds.get(fill.cell) else {
+        let Ok(ground_entity) = grounds.get(check.cell) else {
             continue;
         };
 
@@ -99,7 +101,7 @@ fn check_water(
         let mut pair_found: bool = false;
         for pair in pairs.iter() {
             if pair.ground == ground_entity {
-                water_selected.send(WaterSelected { entity: pair.water });
+                water_selected.send(ShiftWater { entity: pair.water, upward: check.shifting_upward });
 
                 pair_found = true;
                 break;
@@ -115,20 +117,63 @@ fn check_water(
     }
 }
 
-fn increase_water(
-    mut event: EventReader<WaterSelected>,
+
+#[derive(Event, Debug)]
+pub struct ShiftWater {
+    pub entity: Entity,
+    pub upward: bool,
+}
+
+fn shift_water(
+    mut event: EventReader<ShiftWater>,
     mut waters: Query<(&mut Water, &mut Transform), Without<Ground>>,
-    mut check_drainable: EventWriter<CheckDrainable>,
 ) {
-    for fill in event.read() {
-        let Ok((mut water, mut transform)) = waters.get_mut(fill.entity) else {
+    for shift in event.read() {
+        let Ok((mut water, mut transform)) = waters.get_mut(shift.entity) else {
             continue;
         };
 
         //  update found water
-        water.amount += CELL_HEIGHT;
-        transform.translation.y += CELL_HEIGHT;
+        let direction = if shift.upward { 1.0 } else { -1.0 };
+        water.amount += direction * CELL_HEIGHT;
+        transform.translation.y += direction * CELL_HEIGHT;
+    }
+}
 
-        check_drainable.send(CheckDrainable { cell: fill.entity });
+fn despawn_water(
+    waters: Query<(Entity, &Parent, &GlobalTransform)>,
+    cells: Query<&GlobalTransform, With<GridCell>>,
+    mut commands: Commands,
+) {
+    for (entity, parent, water_transform) in waters.iter() {
+        let Ok(cell_transform) = cells.get(parent.get()) else {
+            continue;
+        };
+        if water_transform.translation().y < cell_transform.translation().y {
+            commands.entity(entity).despawn_recursive();
+        }
+    }
+}
+
+fn connect_water_neighbors(
+    mut waters: Query<(&GridCell, &mut Neighborhood), (With<Water>, Without<Ground>)>,
+    neighbors: Query<(Entity, &GridCell), (With<Water>, Without<Ground>)>
+) {
+    for (cell, mut neighborhood) in waters.iter_mut() {
+        for (neighbor_entity, neighbor) in neighbors.iter() {
+            //  connect neighbors
+            if cell.row - 1 == neighbor.row && cell.col == neighbor.col {
+                neighborhood.left_neighbor = neighbor_entity;
+            }
+            if cell.row + 1 == neighbor.row && cell.col == neighbor.col {
+                neighborhood.right_neighbor = neighbor_entity;
+            }
+            if cell.col - 1 == neighbor.col && cell.row == neighbor.row {
+                neighborhood.front_neighbor = neighbor_entity;
+            }
+            if cell.col + 1 == neighbor.col && cell.row == neighbor.row {
+                neighborhood.back_neighbor = neighbor_entity;
+            }
+        }
     }
 }

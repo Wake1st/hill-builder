@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    draining::CheckDrainable,
+    water::CheckWater,
     grid::{GridCell, CELL_HEIGHT},
     ground::Ground,
     neighborhood::Neighborhood,
@@ -64,7 +64,7 @@ fn shift_cells(
     time: Res<Time>,
     mut shifters: Query<(Entity, &GridCell, &mut Transform, &Shifting), With<Ground>>,
     mut shift_finished: EventWriter<ShiftFinished>,
-    mut check_water: EventWriter<CheckDrainable>,
+    mut check_water: EventWriter<CheckWater>,
     mut commands: Commands,
 ) {
     let delta = SHIFT_RATE * time.delta_secs();
@@ -95,7 +95,7 @@ fn shift_cells(
             });
 
             //  send event to check the water level
-            check_water.send(CheckDrainable { cell: entity });
+            check_water.send(CheckWater { cell: entity, shifting_upward: shifting.up });
 
             //  remove the shifting component
             commands.entity(entity).remove::<Shifting>();

@@ -35,6 +35,7 @@ pub fn update_ground_selection<E>(
         if toggle.0 {
             fill.send(CheckWater {
                 cell: trigger.entity(),
+                shifting_upward: true,
             });
         } else {
             selection.send(GroundSelected {

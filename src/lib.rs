@@ -1,5 +1,5 @@
 mod dev;
-mod draining;
+mod fluid_dynamics;
 mod environment;
 mod flying_camera;
 mod grid;
@@ -14,7 +14,7 @@ mod water;
 
 use bevy::prelude::*;
 use dev::DevPlugin;
-use draining::DrainingPlugin;
+use fluid_dynamics::FluidDynamicsPlugin;
 use environment::EnvironmentPlugin;
 use flying_camera::FlyingCameraPlugin;
 use grid::GridPlugin;
@@ -38,7 +38,7 @@ impl Plugin for AppPlugin {
             GridPlugin,
             ShiftPlugin,
             WaterPlugin,
-            DrainingPlugin,
+            FluidDynamicsPlugin,
         ));
     }
 }
