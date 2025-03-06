@@ -30,20 +30,8 @@ A simple game about building hills.
   - [x] proc-gen should allow raw input
   - [ ] proc-gen should have types per desired results
 - [x] water (should be it's own component, separate from the blocks)
-- [ ] water movement
-  - [x] events
-    - [x] ground adjustments -> trigger water check
-    - [x] water check (if needs water) -> trigger adjustment
-      - [x] get water
-      - [x] create water
-    - [x] water adjustment -> sets new level
-  - [ ] systems
-    - [ ] check neighbor compares neighbor water levels
-      - [ ] if no neighbor, water check
-      - [ ] if yes neighbor, set relative drain rate
-    - [x] move water and mesh
-    - [x] despawn when no water
-- [ ] dev tools should be contained in their own plugin
+- [x] dev tools should be contained in their own plugin
+- [ ] water movement (working, but very slow)
 - [ ] add UI using `bevy_lunex`
 - [ ] make a few basic levels
 - [ ] QoL

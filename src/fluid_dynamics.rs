@@ -47,7 +47,7 @@ fn remove_draining(
 ) {
     for (entity, mut water) in waters.iter_mut() {
         if water.amount < 0.0 {
-            info!("removing for: {:?}", entity);
+            // info!("removing for: {:?}", entity);
             water.amount = 0.0;
             commands.entity(entity).remove::<Draining>();
         }
@@ -61,7 +61,7 @@ pub struct AddDrainingToEmptyWater {
 
 fn add_draining(mut add_draining: EventReader<AddDrainingToEmptyWater>, mut commands: Commands) {
     for event in add_draining.read() {
-        info!("adding draining to: {:?}", event.water);
+        // info!("adding draining to: {:?}", event.water);
         commands
             .entity(event.water)
             .insert_if_new(Draining::default());
