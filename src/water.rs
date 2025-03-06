@@ -1,7 +1,12 @@
 use bevy::prelude::*;
 
 use crate::{
-    dev::user_testing::update_water_selection, grid::{GridCell, CELL_HEIGHT}, ground::Ground, mesh::{create_cube_mesh, CubeBundle}, neighborhood::Neighborhood, pair::Pair
+    dev::user_testing::update_water_selection,
+    grid::{GridCell, CELL_HEIGHT},
+    ground::Ground,
+    mesh::{create_cube_mesh, CubeBundle},
+    neighborhood::Neighborhood,
+    pair::Pair,
 };
 
 pub const WATER_MESH_SCALE: f32 = 0.98;
@@ -14,13 +19,16 @@ impl Plugin for WaterPlugin {
         app.add_event::<SpawnWater>()
             .add_event::<TryShiftWater>()
             .add_event::<ShiftWater>();
-        app.add_systems(Update, (
-            spawn_water, 
-            try_shift_water, 
-            shift_water, 
-            despawn_water, 
-            connect_water_neighbors
-        ));
+        app.add_systems(
+            Update,
+            (
+                spawn_water,
+                try_shift_water,
+                shift_water,
+                despawn_water,
+                connect_water_neighbors,
+            ),
+        );
     }
 }
 
@@ -59,14 +67,15 @@ fn spawn_water(
                     ..default()
                 },
                 Transform::from_translation(
-                    ground_transform.translation() + Vec3::new(0.0, CELL_HEIGHT, 0.0),
+                    ground_transform.translation() + Vec3::new(0.0, 0.0, 0.0),
                 ),
-                GridCell::from_grid_cell(ground_cell, CELL_HEIGHT),
+                GridCell::from_grid_cell(ground_cell, 0.0),
                 Neighborhood::default(),
                 CubeBundle::new(mesh_handle, mesh_matl),
             ))
             .observe(update_water_selection::<Pointer<Down>>())
             .id();
+        // info!("spawned: {:?}", water_entity);
 
         commands.spawn((
             Name::new("Pair"),
@@ -99,7 +108,10 @@ fn try_shift_water(
         //  find current water, if exists
         for pair in pairs.iter() {
             if pair.ground == ground_entity {
-                water_selected.send(ShiftWater { entity: pair.water, upward: check.shifting_upward });
+                water_selected.send(ShiftWater {
+                    entity: pair.water,
+                    upward: check.shifting_upward,
+                });
                 break;
             }
         }
@@ -128,16 +140,9 @@ fn shift_water(
     }
 }
 
-fn despawn_water(
-    waters: Query<(Entity, &Parent, &GlobalTransform)>,
-    cells: Query<&GlobalTransform, With<GridCell>>,
-    mut commands: Commands,
-) {
-    for (entity, parent, water_transform) in waters.iter() {
-        let Ok(cell_transform) = cells.get(parent.get()) else {
-            continue;
-        };
-        if water_transform.translation().y < cell_transform.translation().y {
+fn despawn_water(waters: Query<(Entity, &Water)>, mut commands: Commands) {
+    for (entity, water) in waters.iter() {
+        if water.amount < 0.0 {
             commands.entity(entity).despawn_recursive();
         }
     }
@@ -145,7 +150,7 @@ fn despawn_water(
 
 fn connect_water_neighbors(
     mut waters: Query<(&GridCell, &mut Neighborhood), (With<Water>, Without<Ground>)>,
-    neighbors: Query<(Entity, &GridCell), (With<Water>, Without<Ground>)>
+    neighbors: Query<(Entity, &GridCell), (With<Water>, Without<Ground>)>,
 ) {
     for (cell, mut neighborhood) in waters.iter_mut() {
         for (neighbor_entity, neighbor) in neighbors.iter() {
