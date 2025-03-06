@@ -1,13 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{
-    grid::{GridCell, CELL_HEIGHT},
-    ground::Ground,
-    mesh::{create_cube_mesh, CubeBundle},
-    neighborhood::Neighborhood,
-    pair::Pair,
-    water::{ShiftWater, Water, WATER_COLOR, WATER_MESH_SCALE},
-};
+use crate::{fluid_dynamics::AddDrainingToEmptyWater, grid::CELL_HEIGHT, pair::Pair, water::Water};
 
 pub const FILL_KEY: KeyCode = KeyCode::Tab;
 
@@ -15,7 +8,7 @@ pub struct UserTestingPlugin;
 
 impl Plugin for UserTestingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<CreateWater>();
+        app.add_event::<ManuallyIncreaseWater>();
         app.insert_resource(WaterToggle(false));
         app.add_systems(Update, (toggle_water, create_water));
     }
@@ -39,60 +32,41 @@ pub fn toggle_water(
 }
 
 /// An observer that runs the selection event for water
-pub fn update_water_selection<E>() -> impl Fn(Trigger<E>, EventWriter<ShiftWater>) {
-    move |trigger, mut selection| {
-        selection.send(ShiftWater {
-            entity: trigger.entity(),
-            upward: true,
+pub fn update_water_selection<E>() -> impl Fn(Trigger<E>, EventWriter<ManuallyIncreaseWater>) {
+    move |trigger, mut increase| {
+        increase.send(ManuallyIncreaseWater {
+            ground: trigger.entity(),
         });
     }
 }
 
 #[derive(Event)]
-pub struct CreateWater {
+pub struct ManuallyIncreaseWater {
     pub ground: Entity,
 }
 
 fn create_water(
-    mut event: EventReader<CreateWater>,
-    grounds: Query<(Entity, &GridCell, &GlobalTransform), (With<Ground>, Without<Water>)>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut commands: Commands,
+    mut event: EventReader<ManuallyIncreaseWater>,
+    pairs: Query<&Pair>,
+    mut waters: Query<(Entity, &mut Water, &mut Transform)>,
+    mut add_draining: EventWriter<AddDrainingToEmptyWater>,
 ) {
-    for spawn in event.read() {
-        //  get the ground data
-        let Ok((ground_entity, ground_cell, ground_transform)) = grounds.get(spawn.ground) else {
-            continue;
-        };
+    for check in event.read() {
+        //  find current water, if exists
+        for pair in pairs.iter() {
+            if pair.ground == check.ground {
+                //  increase the water amount and attach drainable to it
+                if let Ok((water_entity, mut water, mut transform)) = waters.get_mut(pair.water) {
+                    water.amount += CELL_HEIGHT;
+                    transform.translation.y += CELL_HEIGHT;
 
-        let mesh_handle = meshes.add(create_cube_mesh(Some(WATER_MESH_SCALE)));
-        let mesh_matl = materials.add(WATER_COLOR);
+                    add_draining.send(AddDrainingToEmptyWater {
+                        water: water_entity,
+                    });
+                };
 
-        let water_entity = commands
-            .spawn((
-                Name::new("water"),
-                Water {
-                    amount: CELL_HEIGHT,
-                    ..default()
-                },
-                Transform::from_translation(
-                    ground_transform.translation() + Vec3::new(0.0, CELL_HEIGHT, 0.0),
-                ),
-                GridCell::from_grid_cell(ground_cell, CELL_HEIGHT),
-                Neighborhood::default(),
-                CubeBundle::new(mesh_handle, mesh_matl),
-            ))
-            .observe(update_water_selection::<Pointer<Down>>())
-            .id();
-        // info!("spawned: {:?}", water_entity);
-
-        commands.spawn((
-            Name::new("Pair"),
-            Pair {
-                ground: ground_entity,
-                water: water_entity,
-            },
-        ));
+                break;
+            }
+        }
     }
 }

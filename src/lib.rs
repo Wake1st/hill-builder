@@ -1,6 +1,6 @@
 mod dev;
-mod fluid_dynamics;
 mod environment;
+mod fluid_dynamics;
 mod flying_camera;
 mod grid;
 mod ground;
@@ -14,11 +14,9 @@ mod water;
 
 use bevy::prelude::*;
 use dev::DevPlugin;
-use fluid_dynamics::FluidDynamicsPlugin;
 use environment::EnvironmentPlugin;
+use fluid_dynamics::FluidDynamicsPlugin;
 use flying_camera::FlyingCameraPlugin;
-use grid::GridPlugin;
-use ground::GroundPlugin;
 use map::MapPlugin;
 use selection::SelectionPlugin;
 use shifting::ShiftPlugin;
@@ -34,8 +32,6 @@ impl Plugin for AppPlugin {
             SelectionPlugin,
             MapPlugin,
             FlyingCameraPlugin,
-            GroundPlugin,
-            GridPlugin,
             ShiftPlugin,
             WaterPlugin,
             FluidDynamicsPlugin,

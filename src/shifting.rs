@@ -1,11 +1,11 @@
 use bevy::prelude::*;
 
 use crate::{
-    grid::{GridCell, CELL_HEIGHT}, 
-    ground::Ground, 
-    neighborhood::Neighborhood, 
-    selection::GroundSelected, 
-    water::TryShiftWater
+    grid::{GridCell, CELL_HEIGHT},
+    ground::Ground,
+    neighborhood::Neighborhood,
+    selection::GroundSelected,
+    water::TryShiftWater,
 };
 
 const SHIFT_RATE: f32 = 8.4;
@@ -21,7 +21,7 @@ impl Plugin for ShiftPlugin {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct Shifting {
     pub up: bool,
 }
@@ -95,7 +95,10 @@ fn shift_cells(
             });
 
             //  send event to check the water level
-            try_shift_water.send(TryShiftWater { cell: entity, shifting_upward: shifting.up });
+            try_shift_water.send(TryShiftWater {
+                ground: entity,
+                shifting_upward: shifting.up,
+            });
 
             //  remove the shifting component
             commands.entity(entity).remove::<Shifting>();

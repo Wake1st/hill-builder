@@ -2,11 +2,14 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    dev::user_testing::update_water_selection,
     grid::{GridCell, GridCellBundle},
     ground::Ground,
     mesh::{create_cube_mesh, CubeBundle},
     neighborhood::Neighborhood,
-    selection::{update_ground_selection, update_material_on}, water::Water,
+    pair::Pair,
+    selection::{update_ground_selection, update_material_on},
+    water::{Water, WATER_COLOR, WATER_MESH_SCALE},
 };
 
 const MAP_SIZE_DEFAULT: i32 = 8;
@@ -20,14 +23,20 @@ impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(CurrentMapSettings::default());
 
-        app.add_event::<GenerateMap>().add_event::<ClearMap>();
+        app.add_event::<GenerateMap>()
+            .add_event::<ClearMap>()
+            .add_event::<ConnectGridCells>();
 
         app.add_systems(
             Update,
             (
                 clear_map,
                 store_map,
-                (generate_map, connect_ground_neighbors).chain(),
+                (
+                    generate_map,
+                    (connect_grid_cells::<Ground>, connect_grid_cells::<Water>),
+                )
+                    .chain(),
             ),
         );
     }
@@ -100,12 +109,15 @@ fn generate_map(
     mut commands: Commands,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
+    mut connect_grid_cells: EventWriter<ConnectGridCells>,
 ) {
     for generation in event.read() {
         let hover_matl = materials.add(Color::WHITE);
         let ground_matl = materials.add(GROUND_COLOR);
-
         let ground_mesh_handle: Handle<Mesh> = meshes.add(create_cube_mesh(None));
+
+        let water_matl = materials.add(WATER_COLOR);
+        let water_mesh_handle = meshes.add(create_cube_mesh(Some(WATER_MESH_SCALE)));
 
         let map_size = generation.settings.size;
         let map_offset: f32 = (map_size as f32) * (1. + GAP) / 2.0;
@@ -118,7 +130,7 @@ fn generate_map(
                 };
 
                 // render the mesh with the custom texture, and add the marker.
-                commands
+                let ground_entity = commands
                     .spawn((
                         Ground,
                         CubeBundle::new(ground_mesh_handle.clone(), ground_matl.clone()),
@@ -126,9 +138,35 @@ fn generate_map(
                     ))
                     .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
                     .observe(update_material_on::<Pointer<Out>>(ground_matl.clone()))
-                    .observe(update_ground_selection::<Pointer<Down>>());
+                    .observe(update_ground_selection::<Pointer<Down>>())
+                    .id();
+
+                let water_entity = commands
+                    .spawn((
+                        Name::new("water"),
+                        Water {
+                            amount: 0.0,
+                            ..default()
+                        },
+                        GridCellBundle::new(map_offset, IVec3::new(i, j, layer)),
+                        CubeBundle::new(water_mesh_handle.clone(), water_matl.clone()),
+                    ))
+                    .observe(update_water_selection::<Pointer<Down>>())
+                    .id();
+                // info!("spawned: {:?}", water_entity);
+
+                commands.spawn((
+                    Name::new("Pair"),
+                    Pair {
+                        ground: ground_entity,
+                        water: water_entity,
+                    },
+                ));
             }
         }
+
+        //  ensure the new cells are connected
+        connect_grid_cells.send(ConnectGridCells);
     }
 }
 
@@ -140,23 +178,29 @@ fn generate_layer(x: i32, y: i32, settings: &CurvedTerrainSettings) -> i32 {
         + settings.vertical_shift.y) as i32
 }
 
-fn connect_ground_neighbors(
-    mut cells: Query<(&GridCell, &mut Neighborhood), (With<Ground>, Without<Water>)>,
-    neighbors: Query<(Entity, &GridCell), (With<Ground>, Without<Water>)>,
+#[derive(Event)]
+pub struct ConnectGridCells;
+
+fn connect_grid_cells<T: Component>(
+    mut connect_grid_cells: EventReader<ConnectGridCells>,
+    mut cells: Query<(&GridCell, &mut Neighborhood), With<T>>,
+    neighbors: Query<(Entity, &GridCell), With<T>>,
 ) {
-    for (cell, mut neighborhood) in cells.iter_mut() {
-        for (neighbor_entity, neighbor) in neighbors.iter() {
-            if cell.row - 1 == neighbor.row && cell.col == neighbor.col {
-                neighborhood.left_neighbor = neighbor_entity;
-            }
-            if cell.row + 1 == neighbor.row && cell.col == neighbor.col {
-                neighborhood.right_neighbor = neighbor_entity;
-            }
-            if cell.col - 1 == neighbor.col && cell.row == neighbor.row {
-                neighborhood.front_neighbor = neighbor_entity;
-            }
-            if cell.col + 1 == neighbor.col && cell.row == neighbor.row {
-                neighborhood.back_neighbor = neighbor_entity;
+    for _ in connect_grid_cells.read() {
+        for (cell, mut neighborhood) in cells.iter_mut() {
+            for (neighbor_entity, neighbor) in neighbors.iter() {
+                if cell.row - 1 == neighbor.row && cell.col == neighbor.col {
+                    neighborhood.left_neighbor = neighbor_entity;
+                }
+                if cell.row + 1 == neighbor.row && cell.col == neighbor.col {
+                    neighborhood.right_neighbor = neighbor_entity;
+                }
+                if cell.col - 1 == neighbor.col && cell.row == neighbor.row {
+                    neighborhood.front_neighbor = neighbor_entity;
+                }
+                if cell.col + 1 == neighbor.col && cell.row == neighbor.row {
+                    neighborhood.back_neighbor = neighbor_entity;
+                }
             }
         }
     }

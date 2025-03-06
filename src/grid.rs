@@ -5,12 +5,6 @@ use crate::neighborhood::Neighborhood;
 const CELL_GAP: f32 = 0.1;
 pub const CELL_HEIGHT: f32 = 0.5;
 
-pub struct GridPlugin;
-
-impl Plugin for GridPlugin {
-    fn build(&self, _app: &mut App) {}
-}
-
 #[derive(Component, Debug, Default)]
 pub struct GridCell {
     pub row: i32,
@@ -21,16 +15,6 @@ pub struct GridCell {
 impl PartialEq for GridCell {
     fn eq(&self, rhs: &GridCell) -> bool {
         self.row == rhs.row && self.col == rhs.col
-    }
-}
-
-impl GridCell {
-    pub fn from_grid_cell(cell: &GridCell, layer_offset: f32) -> Self {
-        Self {
-            row: cell.row,
-            col: cell.col,
-            layer: cell.layer + layer_offset,
-        }
     }
 }
 
