@@ -41,11 +41,13 @@ fn setup(mut commands: Commands, water_toggle: Res<WaterToggle>) {
 }
 
 fn toggle_water_display(
+    mut toggled: EventReader<WaterToggled>,
     toggle: Res<WaterToggle>,
-    mut query: Query<&mut TextSpan, With<WaterToggleText>>,
+    mut query: Query<&mut Text, With<WaterToggleText>>,
 ) {
-    if let Ok(mut text) = query.get_single_mut() {
-        info!("toggling");
-        **text = format!("Water toggled: {:?}", toggle.0);
-    };
+    for _ in toggled.read() {
+        if let Ok(mut text) = query.get_single_mut() {
+            **text = format!("Water toggled: {:?}", toggle.0);
+        };
+    }
 }
