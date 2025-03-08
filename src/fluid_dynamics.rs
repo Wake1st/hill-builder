@@ -2,8 +2,8 @@ use bevy::prelude::*;
 
 use crate::{ground::Ground, neighborhood::Neighborhood, water::Water};
 
-const WATER_SPEED: f32 = 1.0;
-const LEVEL_CUTOFF: f32 = 0.000_001;
+const WATER_SPEED: f32 = 0.02;
+const LEVEL_CUTOFF: f32 = 0.05;
 
 pub struct FluidDynamicsPlugin;
 
@@ -105,17 +105,18 @@ fn set_drain_rate(
             }
         }
 
-        if drain_rate != 0.0 {
-            draining.rate = drain_rate;
-        }
+        draining.rate = match drain_rate {
+            i if i == 0. => 0.0,
+            i if i < 0. => -1.0,
+            i if i > 0. => 1.0,
+            _ => 0.0,
+        };
     }
 }
 
-fn drain_water(mut waters: Query<(&mut Water, &mut Transform, &Draining)>, time: Res<Time>) {
-    let delta_time = time.delta_secs();
-
+fn drain_water(mut waters: Query<(&mut Water, &mut Transform, &Draining)>) {
     for (mut water, mut transform, draining) in waters.iter_mut() {
-        let drain_amount = draining.rate * WATER_SPEED * delta_time;
+        let drain_amount = draining.rate * WATER_SPEED;
         water.amount += drain_amount;
         transform.translation.y += drain_amount;
     }

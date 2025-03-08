@@ -13,7 +13,6 @@ use crate::{
 };
 
 const MAP_SIZE_DEFAULT: i32 = 8;
-const GAP: f32 = 0.1;
 
 const GROUND_COLOR: Color = Color::srgb(0.0, 0.9, 0.1);
 
@@ -120,7 +119,7 @@ fn generate_map(
         let water_mesh_handle = meshes.add(create_cube_mesh(Some(WATER_MESH_SCALE)));
 
         let map_size = generation.settings.size;
-        let map_offset: f32 = (map_size as f32) * (1. + GAP) / 2.0;
+        let map_offset: f32 = map_size as f32 / 2.0;
 
         for i in 0..map_size {
             for j in 0..map_size {
@@ -153,7 +152,6 @@ fn generate_map(
                     ))
                     .observe(update_water_selection::<Pointer<Down>>())
                     .id();
-                // info!("spawned: {:?}", water_entity);
 
                 commands.spawn((
                     Name::new("Pair"),

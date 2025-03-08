@@ -2,7 +2,6 @@ use bevy::prelude::*;
 
 use crate::neighborhood::Neighborhood;
 
-const CELL_GAP: f32 = 0.1;
 pub const CELL_HEIGHT: f32 = 0.5;
 
 #[derive(Component, Debug, Default)]
@@ -35,9 +34,9 @@ impl GridBuilder for GridCell {
 impl GridBuilder for Transform {
     fn from_grid_coordinates(coordinates: IVec3, offset: f32) -> Self {
         Transform::from_xyz(
-            (coordinates.x as f32) * (1.0 + CELL_GAP) - offset,
+            coordinates.x as f32 - offset,
             coordinates.z as f32 * CELL_HEIGHT,
-            (coordinates.y as f32) * (1.0 + CELL_GAP) - offset,
+            coordinates.y as f32 - offset,
         )
     }
 }

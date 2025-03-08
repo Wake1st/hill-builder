@@ -31,7 +31,11 @@ A simple game about building hills.
   - [ ] proc-gen should have types per desired results
 - [x] water (should be it's own component, separate from the blocks)
 - [x] dev tools should be contained in their own plugin
-- [ ] water movement (working, but very slow)
+- [x] water movement (working, but very slow)
+- [ ] water should shift with the ground blocks, not after
+- [ ] the water is uneven
+  - perhaps an approach with total water and filling from the lowest points?
+  - perhaps something more akin to real fluid dynamics
 - [ ] add UI using `bevy_lunex`
 - [ ] make a few basic levels
 - [ ] QoL
