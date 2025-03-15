@@ -3,6 +3,7 @@ use bevy::{
     prelude::*,
     render::camera::ScalingMode,
 };
+use bevy_lunex::UiSourceCamera;
 
 const CAMERA_DISTANCE: f32 = 24.0;
 
@@ -50,6 +51,7 @@ fn setup(mut commands: Commands) {
             parent.spawn((
                 FlyingCamera,
                 Camera3d::default(),
+                UiSourceCamera::<0>,
                 Projection::from(OrthographicProjection {
                     // 6 world units per pixel of window height.
                     scaling_mode: ScalingMode::FixedVertical {

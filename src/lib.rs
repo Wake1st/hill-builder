@@ -11,6 +11,7 @@ mod pair;
 mod selection;
 mod shifting;
 mod water;
+mod ui;
 
 use bevy::prelude::*;
 use dev::DevPlugin;
@@ -20,6 +21,7 @@ use flying_camera::FlyingCameraPlugin;
 use map::MapPlugin;
 use selection::SelectionPlugin;
 use shifting::ShiftPlugin;
+use ui::UIPlugin;
 use water::WaterPlugin;
 
 pub struct AppPlugin;
@@ -28,6 +30,7 @@ impl Plugin for AppPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(DefaultPlugins).add_plugins((
             DevPlugin,
+            UIPlugin,
             EnvironmentPlugin,
             SelectionPlugin,
             MapPlugin,
