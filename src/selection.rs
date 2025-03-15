@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{dev::user_testing::WaterToggle, water::CheckWater};
+use crate::dev::user_testing::{ManuallyIncreaseWater, WaterToggle};
 
 pub struct SelectionPlugin;
 
@@ -30,14 +30,15 @@ pub fn update_material_on<E>(
 
 /// An observer that runs the selection event for ground
 pub fn update_ground_selection<E>(
-) -> impl Fn(Trigger<E>, Res<WaterToggle>, EventWriter<GroundSelected>, EventWriter<CheckWater>) {
-    move |trigger, toggle, mut selection, mut fill| {
+) -> impl Fn(Trigger<E>, Res<WaterToggle>, EventWriter<GroundSelected>, EventWriter<ManuallyIncreaseWater>)
+{
+    move |trigger, toggle, mut ground_selected, mut shift_water| {
         if toggle.0 {
-            fill.send(CheckWater {
-                cell: trigger.entity(),
+            shift_water.send(ManuallyIncreaseWater {
+                ground: trigger.entity(),
             });
         } else {
-            selection.send(GroundSelected {
+            ground_selected.send(GroundSelected {
                 entity: trigger.entity(),
             });
         }

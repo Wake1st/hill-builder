@@ -18,3 +18,14 @@ impl Neighborhood {
         ]
     }
 }
+
+impl Default for Neighborhood {
+    fn default() -> Self {
+        Self { 
+            left_neighbor: Entity::PLACEHOLDER, 
+            right_neighbor: Entity::PLACEHOLDER, 
+            front_neighbor: Entity::PLACEHOLDER, 
+            back_neighbor: Entity::PLACEHOLDER 
+        }
+    }
+}
